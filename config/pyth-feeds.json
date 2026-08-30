@@ -1,0 +1,18 @@
+{
+  "_verified": "Verified 2026-08-29 against Hermes (https://hermes.pyth.network/v2/price_feeds) for feed_ids, and against live devnet RPC (api.devnet.solana.com) for the sponsored price_update_account addresses — confirmed owned by the Pyth receiver program (rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ), correct account size (134 bytes, matching PriceUpdateV2::LEN), and actively updating (publish_time within seconds of fetch time). Re-verify before mainnet, and if this file is regenerated, note the account address is derived via PDA(seeds=[shard_id_u16_le, feed_id_32_bytes], program=pythWSnswVUd12oZpeFP8e9CVaEqJg25g1Vtc2biRsT) but the resulting account is owned by the receiver program above, not the push-oracle program used only for address derivation.",
+  "cluster": "devnet",
+  "feeds": {
+    "BTC/USD": {
+      "feed_id": "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43",
+      "price_update_account": "4cSM2e6rvbGQUFiJbqytoVMi5GgghSMr8LwVrT9VPSPo"
+    },
+    "ETH/USD": {
+      "feed_id": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+      "price_update_account": "42amVS4KgzR9rA28tkVYqVXjq9Qa8dcZQMbH5EYFX6XC"
+    },
+    "SOL/USD": {
+      "feed_id": "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
+      "price_update_account": "7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE"
+    }
+  }
+}

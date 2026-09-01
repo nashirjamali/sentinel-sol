@@ -13,4 +13,4 @@ pub const RESOLVER_SEED: &[u8] = b"resolver";
 /// `resolution` crate) to avoid a circular Cargo dependency, since `resolution_program` CPIs
 /// into `market_program`. Only `resolution_program`'s own resolver PDA (derived from this ID)
 /// may sign the `apply_resolution` instruction below.
-pub const RESOLUTION_PROGRAM_ID: Pubkey = pubkey!("29kJzCm1CDTm9MHHFHJUSM2k31XKxLtGAeHjVEooUAu9");
+pub const RESOLUTION_PROGRAM_ID: Pubkey = pubkey!("HsGLymsSrMZhPwjT6xGCmbubUSP4e96HjTqdqRwej9uA");

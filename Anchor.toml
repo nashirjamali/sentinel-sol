@@ -5,10 +5,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-config = "oGTLBZ9nDq6TcoAPmYR4aS26vgVsEfsCZqbX4zYvEVf"
-market = "AdPs1Q41NKPZjJrMuodth7Jis2Utd8NqMi2qzknTnBAN"
-amm = "4YRUWdfnuCXbUTxdKRLPLvwHKrzPkkgNLxN4Up4r9K9C"
-resolution = "29kJzCm1CDTm9MHHFHJUSM2k31XKxLtGAeHjVEooUAu9"
+config = "HczupjcktZTYtecWhmcCYnDnRM4KJRFZ23k9oSnSygku"
+market = "9HXZJVGL4XwvKBWELccwWfj21Rv6JcA8wGiEZepfs6on"
+amm = "rrajTt3BB1QP3avwnsfBCmjpR8EMgBSvKvDJhYHH1ip"
+resolution = "HsGLymsSrMZhPwjT6xGCmbubUSP4e96HjTqdqRwej9uA"
 
 [registry]
 url = "https://api.apr.dev"

@@ -8,7 +8,7 @@ use anchor_lang::prelude::*;
 pub use constants::*;
 pub use instructions::*;
 
-declare_id!("29kJzCm1CDTm9MHHFHJUSM2k31XKxLtGAeHjVEooUAu9");
+declare_id!("HsGLymsSrMZhPwjT6xGCmbubUSP4e96HjTqdqRwej9uA");
 
 #[program]
 pub mod resolution {

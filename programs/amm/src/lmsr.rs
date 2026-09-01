@@ -204,7 +204,7 @@ mod tests {
         // Simulate many swaps all in the same direction and verify cumulative amount_out never
         // exceeds cumulative amount_in by more than the theoretical LMSR bound b*ln(2). This is
         // the "pool never releases more than the theoretical LMSR bound" property required by
-        // docs/PROGRAM_SPEC.md.
+        // docs/libs/PROGRAM_SPEC.md.
         let b = 5_000_000_000u64; // 5000 tokens
         let mut q_down: i64 = 0;
         let mut q_up: i64 = 0;

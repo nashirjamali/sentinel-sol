@@ -31,10 +31,12 @@ correctness, not scale.
 
 ## Scope OUT (deferred to Phase 2/3, see IMPLEMENTATION_PLAN.md)
 
-- Frontend implementation. Only low-fidelity wireframes exist at this stage (see
-  `docs/WIREFRAME_NOTES.md` and the delivered wireframe file) — no working UI is built during
-  the MVP program-implementation phase. Program interaction happens via the Anchor
-  TypeScript client / CLI / tests.
+- Frontend application flows. Only low-fidelity wireframes exist for these at this stage (see
+  the delivered wireframe file) — no working UI for market list / Protect / redeem /
+  provide-liquidity is built during the MVP program-implementation phase. Program interaction
+  happens via the Anchor TypeScript client / CLI / tests. (A static landing hero with no
+  protocol interaction has been built ahead of schedule — see `docs/features/landing-hero.md`
+  and `docs/product/planned/m7-frontend.md`.)
 - CLOB / order matching for large sizes — MVP is LMSR-only.
 - Automated Underwriting Vault with cross-market allocation.
 - Insurance Backstop Fund.
@@ -64,7 +66,7 @@ correctness, not scale.
 - Every instruction ships with an Anchor test (happy path + at least 2 failure paths).
 - No instruction may leave the collateral vault short of funds for a valid redemption (see the
   1:1 collateral invariant in `CLAUDE.md`).
-- Internal audit (the self-review checklist in `docs/PROGRAM_SPEC.md`) before deploying to
+- Internal audit (the self-review checklist in `docs/libs/PROGRAM_SPEC.md`) before deploying to
   public devnet; an external audit is required before any real funds touch mainnet — out of
   scope for this implementation plan, but a hard prerequisite.
 

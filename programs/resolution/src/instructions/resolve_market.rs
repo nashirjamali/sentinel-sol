@@ -44,7 +44,7 @@ pub fn handle_resolve_market(ctx: Context<ResolveMarket>) -> Result<()> {
     let price_update = &ctx.accounts.price_update;
 
     // market.asset_feed_id doubles as the Pyth FeedId (both are opaque 32-byte identifiers) —
-    // see docs/PROGRAM_SPEC.md §1: `asset_feed_id` is the feed this market resolves against.
+    // see docs/libs/PROGRAM_SPEC.md §1: `asset_feed_id` is the feed this market resolves against.
     let feed_id = market.asset_feed_id.to_bytes();
     require!(
         price_update.price_message.feed_id == feed_id,

@@ -1,7 +1,7 @@
 //! WAD (1e18) fixed-point arithmetic on `i128`, with `exp`/`ln` implemented from scratch via
 //! range reduction + series expansion. No floating point anywhere — every operation is checked
 //! integer arithmetic, matching the "never use floating point on-chain" rule in
-//! `docs/PROGRAM_SPEC.md`. This module has no Solana/Anchor dependency and is unit-tested on
+//! `docs/libs/PROGRAM_SPEC.md`. This module has no Solana/Anchor dependency and is unit-tested on
 //! its own (`cargo test -p amm`), independent of the instructions that use it.
 
 use ethnum::I256;

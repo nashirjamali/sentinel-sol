@@ -7,3 +7,5 @@ test-ledger
 .yarn
 yarn.lock
 .surfpool
+.next
+next-env.d.ts

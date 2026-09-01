@@ -7,13 +7,18 @@ purely parametric, driven by the Pyth price oracle, with no manual claims proces
 
 Read in this order before starting work:
 1. `docs/PRD.md` — MVP scope, what is IN and OUT.
-2. `docs/ARCHITECTURE.md` — system overview and the reasoning behind it. The fuller
+2. `docs/architecture/ARCHITECTURE.md` — system overview and the reasoning behind it. The fuller
    product/investor-facing architecture lives in the Sentinels artifact:
    https://claude.ai/code/artifact/9a840625-bf4d-4189-b327-57781a546a1b
-3. `docs/PROGRAM_SPEC.md` — accounts, instructions, and invariants for every program. This is
-   the source of truth for implementation.
+3. `docs/libs/PROGRAM_SPEC.md` — accounts, instructions, and invariants for every program. This
+   is the source of truth for implementation.
 4. `docs/IMPLEMENTATION_PLAN.md` — the order of work. Follow it in sequence; don't start the
-   AMM before `market_program` passes its tests.
+   AMM before `market_program` passes its tests. Each milestone links to a detail file under
+   `docs/product/implemented/` or `docs/product/planned/` — that's where status, scope, and
+   test coverage per milestone live; keep both in sync when a milestone's status changes.
+
+See `docs/README.md` for the full doc map, including `docs/features/` (UI/product features that
+aren't program milestones) and `docs/product/personas.md`.
 
 ## Tech stack
 
@@ -23,9 +28,12 @@ Read in this order before starting work:
 - Client/testing: `@coral-xyz/anchor` TypeScript client, Anchor's Mocha/Chai test harness,
   `solana-program-test` / `bankrun` for fast unit tests outside a local validator.
 
-Frontend is out of scope for now — see `docs/PRD.md`. Only low-fidelity wireframes exist at
-this stage (delivered separately); do not scaffold a Next.js app until the plan explicitly
-calls for it.
+Frontend application flows (market list, Protect, positions/redeem, provide-liquidity) are out
+of scope until `docs/product/planned/m7-frontend.md` is unblocked by M6 (the TypeScript SDK) —
+see `docs/PRD.md`. The one exception: a static landing hero (`app/`, Next.js — no wallet
+connection, no SDK integration) has been built ahead of that sequencing at the user's explicit
+direction; see `docs/features/landing-hero.md`. Don't extend `app/` into the gated application
+flows without the user explicitly asking, same as the hero itself required.
 
 ## Suggested repo layout
 
@@ -37,7 +45,15 @@ programs/
   resolution/        # reads Pyth, determines outcome
 tests/
   <same name as program>.ts
-docs/                # this documentation set
+app/                 # Next.js frontend package (landing hero only — see Tech stack above)
+docs/
+  architecture/       # system design
+  libs/                # PROGRAM_SPEC.md, API.md — implementation source of truth
+  product/
+    implemented/        # one file per shipped milestone
+    planned/             # one file per upcoming milestone
+    personas.md
+  features/            # UI/product features that aren't program milestones
 ```
 
 ## Invariants that must never be broken
@@ -72,5 +88,5 @@ proves it:
 - Do not implement an automated Underwriting Vault, an Insurance Backstop Fund, or DAO
   governance in the early iterations — those are Phase 2/3 in `IMPLEMENTATION_PLAN.md`. For
   the MVP, underwriting happens directly through `add_liquidity` on `amm_program`.
-- If this document and `PROGRAM_SPEC.md` disagree, `PROGRAM_SPEC.md` wins — this file is a
-  summary, not the full specification.
+- If this document and `docs/libs/PROGRAM_SPEC.md` disagree, `PROGRAM_SPEC.md` wins — this file
+  is a summary, not the full specification.

@@ -412,6 +412,98 @@ re-verify before demoing, these can go stale):
 
 ---
 
+## REST API (backend connector — scaffolding in progress)
+
+Everything above is the raw on-chain interface (the 4 Anchor programs). The frontend doesn't
+call that directly — a backend REST API sits in between, so the frontend gets plain JSON over
+HTTP instead of having to derive PDAs, decode Anchor accounts, and run the LMSR math itself.
+This section is the target spec for that backend to build against.
+
+```
+Frontend (Next.js)  ──HTTP/JSON──▶  Backend REST API  ──RPC──▶  Solana devnet (4 programs)
+```
+
+A first slice already exists as Next.js Route Handlers under `app/app/api/**`, backed by a
+`server/services/*` seam — see `docs/features/backend-api-scaffold.md` for that scaffold's own
+notes. It currently serves **fixture data**, not real on-chain reads, for `GET /api/health` and
+`GET /api/markets`. Wiring the `market-service.ts` seam to actually decode `Market`/`AmmPool`
+accounts doesn't need to wait on a separate formal SDK package (`M6`) — the IDL already exists
+at `target/idl/*.json` after `anchor build`, and `@coral-xyz/anchor`'s `Program` class can
+decode accounts directly against it today.
+
+**Security rule that must never be broken**: the backend never holds or signs with a user's
+private key. For any action a user initiates (mint, swap, add/remove liquidity, redeem), the
+backend only *builds* an unsigned transaction — the user's own wallet signs it client-side. The
+backend only has its own keypair for one purpose: running the keeper role (`resolve_market` is
+permissionless by design, so it's safe for the backend to hold and sign with a dedicated keeper
+wallet funded with just enough SOL for tx fees).
+
+### Markets — read
+
+| Method | Path | Returns | Backed by |
+|---|---|---|---|
+| GET | `/api/markets` | List of markets (supports `?asset=BTC\|ETH\|SOL` and `?status=active\|resolved`) | `Market` accounts (`market` program) — **fixture data today, per `docs/features/backend-api-scaffold.md`** |
+| GET | `/api/markets/:marketId` | Single market detail (strike, expiry, status, outcome, resolved price) | `Market` account — fixture data today |
+| GET | `/api/markets/:marketId/pool` | AMM pool state + live DOWN/UP price (LMSR) | `AmmPool` account + `lmsr::price_down/price_up` math — not yet scaffolded |
+| GET | `/api/assets` | Supported assets (BTC/ETH/SOL) and their `RiskConfig` (staleness, confidence, trading-halt window) | `RiskConfig` accounts (`config` program) — not yet scaffolded |
+
+### Positions — read, per wallet
+
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/api/users/:wallet/positions` | All DOWN/UP/LP token balances for a wallet, across every market |
+| GET | `/api/users/:wallet/positions/:marketId` | Position detail for one market |
+
+### Transactions — build unsigned, user's wallet signs
+
+Each of these returns a base64-serialized **unsigned** transaction; the frontend passes it to
+the connected wallet (`wallet-adapter`'s `signAndSendTransaction`) — the backend never sees a
+signature.
+
+| Method | Path | Wraps instruction |
+|---|---|---|
+| POST | `/api/tx/mint` | `mint_complete_set` |
+| POST | `/api/tx/merge` | `merge_complete_set` |
+| POST | `/api/tx/swap` | `swap` |
+| POST | `/api/tx/add-liquidity` | `add_liquidity` |
+| POST | `/api/tx/remove-liquidity` | `remove_liquidity` |
+| POST | `/api/tx/redeem` | `redeem` |
+
+### Keeper / ops — backend's own wallet, not the user's
+
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/api/keeper/resolve/:marketId` | Manually triggers `resolve_market` — useful for demos, so you don't have to wait for a real market to actually expire on camera |
+| *(cron, not an endpoint)* | — | Background job that scans for expired-but-unresolved markets and calls `resolve_market` automatically |
+
+### Meta
+
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/api/health` | RPC connectivity + keeper wallet SOL balance — **already scaffolded** (liveness only so far, no RPC check yet) |
+| GET | `/api/config` | Read-only `GlobalConfig` (e.g. `paused` — lets the frontend show a "protocol paused" banner) |
+
+Deliberately **not** exposed over REST: `create_market`, `init_pool`, `upsert_risk_config`,
+`set_paused`, `set_pending_admin`/`accept_admin` — these are admin/operational actions, run
+directly via CLI/scripts against the deployed programs rather than through a public endpoint.
+Even if someone called a hypothetical `/api/admin/*` endpoint without authorization, the
+on-chain program would still reject it (`has_one = admin` constraints per
+`docs/libs/PROGRAM_SPEC.md`) — but not exposing the endpoint at all avoids the noise/attack
+surface for no benefit, since these actions aren't things end users are meant to trigger from
+the app.
+
+### Build priority (P0 first — enough for an end-to-end demo)
+
+1. `GET /api/markets`, `GET /api/markets/:id`, `GET /api/markets/:id/pool` — swap `market-service.ts`
+   from fixtures to real decoding first, since routes/error-mapping already exist
+2. `POST /api/tx/mint`, `POST /api/tx/swap`, `POST /api/tx/redeem`
+3. `POST /api/keeper/resolve/:marketId`
+
+Everything else (`merge`, add/remove-liquidity, per-user positions, `/api/assets`,
+`/api/config`) can follow once the P0 path is demoable end-to-end.
+
+---
+
 ## Notes for whoever integrates against this
 
 - This file documents the four Anchor programs directly — there's no hosted SDK yet (`M6` in

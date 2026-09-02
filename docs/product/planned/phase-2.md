@@ -12,7 +12,7 @@
 - Multi-strike strips per asset (graduated payout, approximating a put-option curve).
 - Switchboard as a second oracle cross-check.
 - Governance transition to a DAO ($SNTL token, staking as backstop capital).
-- Full frontend build (beyond the M7 landing hero), using the wireframes from Phase 1 as the
+- Full frontend build (beyond the M7 design system), using the wireframes from Phase 1 as the
   starting reference.
 
 ## Why

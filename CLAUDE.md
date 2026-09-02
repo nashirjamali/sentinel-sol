@@ -30,10 +30,10 @@ aren't program milestones) and `docs/product/personas.md`.
 
 Frontend application flows (market list, Protect, positions/redeem, provide-liquidity) are out
 of scope until `docs/product/planned/m7-frontend.md` is unblocked by M6 (the TypeScript SDK) —
-see `docs/PRD.md`. The one exception: a static landing hero (`app/`, Next.js — no wallet
-connection, no SDK integration) has been built ahead of that sequencing at the user's explicit
-direction; see `docs/features/landing-hero.md`. Don't extend `app/` into the gated application
-flows without the user explicitly asking, same as the hero itself required.
+see `docs/PRD.md`. Ahead of that sequencing, `app/` holds a Tailwind + shadcn design system
+(atomic folders, no CSS Modules) and an empty home route — the landing hero was removed and
+will be restructured later; see `docs/features/design-system.md`. Don't extend `app/` into the
+gated application flows without the user explicitly asking.
 
 ## Suggested repo layout
 
@@ -45,7 +45,7 @@ programs/
   resolution/        # reads Pyth, determines outcome
 tests/
   <same name as program>.ts
-app/                 # Next.js frontend package (landing hero only — see Tech stack above)
+app/                 # Next.js frontend package (design system + empty home — see Tech stack)
 docs/
   architecture/       # system design
   libs/                # PROGRAM_SPEC.md, API.md — implementation source of truth

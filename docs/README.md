@@ -6,7 +6,7 @@
   `CLAUDE.md`).
 - `product/` — what Sentinels is (`personas.md`), and one file per milestone split across
   `implemented/` and `planned/`. Start here to see what's actually done vs. what's next.
-- `features/` — UI/product features that aren't program milestones (e.g. the landing page).
+- `features/` — UI/product features that aren't program milestones (e.g. the design system).
   Use `feature-spec.md` as the template.
 - `PRD.md` — MVP scope: what's IN and OUT for Phase 1.
 - `IMPLEMENTATION_PLAN.md` — the technical work order; sequencing source of truth. Each

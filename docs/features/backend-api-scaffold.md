@@ -54,9 +54,9 @@ app/
 - `server/solana/programs.ts` copies the localnet program IDs from `Anchor.toml`. This will
   need per-cluster overrides (env-based) once a devnet/mainnet deployment exists — not built
   yet, since only localnet IDs exist today.
-- Fixture data in `market-service.ts` intentionally matches the shape `CoverageLedger`
-  (`docs/features/landing-hero.md`) already renders, so wiring the hero to `/api/markets` later
-  is a fetch call, not a reshape.
+- Fixture data in `market-service.ts` is the market list/detail shape for the future app
+  shell (the landing hero that previously consumed it has been removed; see
+  `docs/features/design-system.md`).
 
 ## Verification
 

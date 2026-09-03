@@ -48,12 +48,12 @@ milestone's status changes.
 - [ ] Client wrapper over the Anchor IDL: `protectAsset`, `provideLiquidity`, `redeem`.
 - [ ] Unit-test the SDK against localnet.
 
-### M7 — Frontend — [`planned`, landing hero prototype started](product/planned/m7-frontend.md)
+### M7 — Frontend — [`planned`, design system started](product/planned/m7-frontend.md)
 
 Originally deferred pending M6 — interacting with the protocol during Phase 1 was meant to
-happen through the SDK, the CLI, and tests, not a UI. A static landing hero (no wallet/SDK
-integration) has since been built ahead of that sequencing at the user's explicit direction —
-see `docs/features/landing-hero.md`. The rest of M7 (market list, Protect flow,
+happen through the SDK, the CLI, and tests, not a UI. A Tailwind + shadcn design system (no
+wallet/SDK integration, landing hero removed) has been started ahead of that sequencing —
+see `docs/features/design-system.md`. The rest of M7 (market list, Protect flow,
 positions/redeem, provide-liquidity) stays gated on M6.
 
 ### M8 — Before any mainnet conversation — [`planned`](product/planned/m8-mainnet-readiness.md)
@@ -71,7 +71,7 @@ positions/redeem, provide-liquidity) stays gated on M6.
 - Multi-strike strips per asset (graduated payout, approximating a put-option curve).
 - Switchboard as a second oracle cross-check.
 - Governance transition to a DAO ($SNTL token, staking as backstop capital).
-- Full frontend build (beyond the M7 landing hero), using the wireframes from Phase 1.
+- Full frontend build (beyond the M7 design system), using the wireframes from Phase 1.
 
 ## Phase 3 — [`planned`](product/planned/phase-3.md)
 

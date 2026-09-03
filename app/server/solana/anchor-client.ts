@@ -3,6 +3,8 @@ import { PublicKey } from "@solana/web3.js";
 import { AnchorProvider, Program, type Idl, type Wallet } from "@coral-xyz/anchor";
 import { getConnection } from "@/server/solana/connection";
 import marketIdl from "@/server/solana/idl/market.json";
+import ammIdl from "@/server/solana/idl/amm.json";
+import configIdl from "@/server/solana/idl/config.json";
 
 /**
  * A no-op wallet, only so `AnchorProvider`'s constructor is satisfied — every read
@@ -22,6 +24,12 @@ const readOnlyWallet: Wallet = {
 };
 
 let marketProgram: Program | null = null;
+let ammProgram: Program | null = null;
+let configProgram: Program | null = null;
+
+function readOnlyProvider(): AnchorProvider {
+  return new AnchorProvider(getConnection(), readOnlyWallet, { commitment: "confirmed" });
+}
 
 /**
  * Read-only `market` program client. IDL spec 0.30+ embeds the program's own address
@@ -30,10 +38,23 @@ let marketProgram: Program | null = null;
  */
 export function getMarketProgram(): Program {
   if (!marketProgram) {
-    const provider = new AnchorProvider(getConnection(), readOnlyWallet, {
-      commitment: "confirmed",
-    });
-    marketProgram = new Program(marketIdl as Idl, provider);
+    marketProgram = new Program(marketIdl as Idl, readOnlyProvider());
   }
   return marketProgram;
+}
+
+/** Read-only `amm` program client — same pattern as `getMarketProgram()`. */
+export function getAmmProgram(): Program {
+  if (!ammProgram) {
+    ammProgram = new Program(ammIdl as Idl, readOnlyProvider());
+  }
+  return ammProgram;
+}
+
+/** Read-only `config` program client — same pattern as `getMarketProgram()`. */
+export function getConfigProgram(): Program {
+  if (!configProgram) {
+    configProgram = new Program(configIdl as Idl, readOnlyProvider());
+  }
+  return configProgram;
 }

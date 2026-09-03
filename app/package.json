@@ -14,6 +14,7 @@
     "react-dom": "^18.3.1",
     "lucide-react": "^0.446.0",
     "@solana/web3.js": "^1.95.3",
+    "@solana/spl-token": "^0.4.15",
     "@coral-xyz/anchor": "^0.31.1",
     "server-only": "^0.0.1"
   },

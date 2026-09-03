@@ -14,6 +14,12 @@ export class NotFoundError extends ApiError {
   }
 }
 
+export class BadRequestError extends ApiError {
+  constructor(message = "Bad request") {
+    super(400, message);
+  }
+}
+
 export function toErrorResponse(error: unknown): { status: number; body: { error: string } } {
   if (error instanceof ApiError) {
     return { status: error.status, body: { error: error.message } };

@@ -7,9 +7,13 @@ import { toErrorResponse } from "@/server/lib/errors";
 // on-chain data that changes (new markets, resolutions). Force a fresh fetch per request.
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const markets = await listMarkets();
+    const { searchParams } = new URL(request.url);
+    const markets = await listMarkets({
+      asset: searchParams.get("asset") ?? undefined,
+      status: searchParams.get("status") ?? undefined,
+    });
     return NextResponse.json({ markets });
   } catch (error) {
     const { status, body } = toErrorResponse(error);

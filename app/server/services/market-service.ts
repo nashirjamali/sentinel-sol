@@ -1,8 +1,8 @@
 import "server-only";
 import { PublicKey } from "@solana/web3.js";
-import { NotFoundError } from "@/server/lib/errors";
+import { BadRequestError, NotFoundError } from "@/server/lib/errors";
 import { getMarketProgram } from "@/server/solana/anchor-client";
-import { symbolForFeedId } from "@/server/solana/assets";
+import { symbolForFeedId, KNOWN_ASSET_SYMBOLS } from "@/server/solana/assets";
 import type { Market, MarketOutcome, MarketStatus } from "@/server/types/market";
 
 /**
@@ -57,12 +57,41 @@ function marketAccountClient(program: ReturnType<typeof getMarketProgram>) {
   return (program.account as any).market;
 }
 
-export async function listMarkets(): Promise<Market[]> {
+export type MarketFilters = {
+  asset?: string;
+  status?: string;
+};
+
+function validateFilters(filters: MarketFilters): void {
+  if (filters.asset !== undefined && !(KNOWN_ASSET_SYMBOLS as readonly string[]).includes(filters.asset)) {
+    throw new BadRequestError(
+      `Invalid ?asset=${filters.asset} — must be one of ${KNOWN_ASSET_SYMBOLS.join(", ")}`,
+    );
+  }
+  if (filters.status !== undefined && filters.status !== "active" && filters.status !== "resolved") {
+    throw new BadRequestError(`Invalid ?status=${filters.status} — must be "active" or "resolved"`);
+  }
+}
+
+export async function listMarkets(filters: MarketFilters = {}): Promise<Market[]> {
+  validateFilters(filters);
+
   const program = getMarketProgram();
   const entries = await marketAccountClient(program).all();
-  return entries.map(({ publicKey, account }: { publicKey: PublicKey; account: any }) =>
-    toApiMarket(publicKey, account),
+  let markets: Market[] = entries.map(
+    ({ publicKey, account }: { publicKey: PublicKey; account: any }) =>
+      toApiMarket(publicKey, account),
   );
+
+  if (filters.asset) {
+    markets = markets.filter((m) => m.assetSymbol === filters.asset);
+  }
+  if (filters.status) {
+    // Deliberately matches only "active"/"resolved" (not the derived "haltedForTrading" state
+    // — see toApiMarket's comment; that's never actually produced today).
+    markets = markets.filter((m) => m.status === filters.status);
+  }
+  return markets;
 }
 
 export async function getMarket(address: string): Promise<Market> {

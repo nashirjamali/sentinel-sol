@@ -1,5 +1,5 @@
 import "server-only";
-import type { PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 
 /**
  * `Market.assetFeedId` is stored on-chain as a `pubkey` (32 raw bytes), doubling as the Pyth
@@ -20,4 +20,29 @@ const FEED_ID_TO_SYMBOL: Record<string, "BTC" | "ETH" | "SOL"> = {
 export function symbolForFeedId(assetFeedId: PublicKey): "BTC" | "ETH" | "SOL" | null {
   const hex = assetFeedId.toBuffer().toString("hex");
   return FEED_ID_TO_SYMBOL[hex] ?? null;
+}
+
+/** The known symbols, in a stable order — used wherever "all 3 assets" needs enumerating. */
+export const KNOWN_ASSET_SYMBOLS = ["BTC", "ETH", "SOL"] as const;
+
+/** Inverse of `symbolForFeedId` — same source map, just the other direction. */
+export function feedIdForSymbol(symbol: "BTC" | "ETH" | "SOL"): PublicKey {
+  const hex = Object.entries(FEED_ID_TO_SYMBOL).find(([, s]) => s === symbol)![0];
+  return new PublicKey(Buffer.from(hex, "hex"));
+}
+
+/**
+ * Devnet Pyth `PriceUpdateV2` account per asset — mirrors `config/pyth-feeds.json`'s
+ * `price_update_account` field. Devnet-specific: these exact addresses are only meaningful
+ * when `SOLANA_RPC_URL` points at devnet. Re-verify against `config/pyth-feeds.json`'s own
+ * `_verified` note before relying on these for anything beyond local dev.
+ */
+const SYMBOL_TO_PRICE_UPDATE_ACCOUNT: Record<"BTC" | "ETH" | "SOL", string> = {
+  BTC: "4cSM2e6rvbGQUFiJbqytoVMi5GgghSMr8LwVrT9VPSPo",
+  ETH: "42amVS4KgzR9rA28tkVYqVXjq9Qa8dcZQMbH5EYFX6XC",
+  SOL: "7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE",
+};
+
+export function priceUpdateAccountForSymbol(symbol: "BTC" | "ETH" | "SOL"): PublicKey {
+  return new PublicKey(SYMBOL_TO_PRICE_UPDATE_ACCOUNT[symbol]);
 }

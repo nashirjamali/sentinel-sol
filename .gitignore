@@ -9,3 +9,4 @@ yarn.lock
 .surfpool
 .next
 next-env.d.ts
+.env*.local

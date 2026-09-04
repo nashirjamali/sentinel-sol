@@ -15,7 +15,7 @@ import resolutionIdl from "@/server/solana/idl/resolution.json";
  * interface itself is tiny, so implementing it directly sidesteps the bundler issue entirely
  * instead of fighting it.
  */
-function keypairWallet(keypair: Keypair): Wallet {
+export function keypairWallet(keypair: Keypair): Wallet {
   return {
     publicKey: keypair.publicKey,
     async signTransaction<T extends Transaction | VersionedTransaction>(tx: T): Promise<T> {
@@ -50,7 +50,7 @@ function keypairWallet(keypair: Keypair): Wallet {
  */
 let resolutionProgram: Program | null = null;
 
-function loadKeeperKeypair(): Keypair {
+export function loadKeeperKeypair(): Keypair {
   const path = process.env.KEEPER_KEYPAIR_PATH;
   if (!path) {
     throw new Error(

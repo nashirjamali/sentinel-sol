@@ -2,7 +2,8 @@ import "server-only";
 import { PublicKey } from "@solana/web3.js";
 import { getMarketProgram } from "@/server/solana/anchor-client";
 import { getResolutionProgramWithKeeper } from "@/server/solana/anchor-keeper";
-import { symbolForFeedId, priceUpdateAccountForSymbol } from "@/server/solana/assets";
+import { symbolForFeedId } from "@/server/solana/assets";
+import { postFreshPriceUpdate } from "@/server/solana/pyth-updater";
 import { PROGRAM_IDS } from "@/server/solana/programs";
 import { BadRequestError, NotFoundError } from "@/server/lib/errors";
 
@@ -40,10 +41,13 @@ export async function resolveMarket(
   const symbol = symbolForFeedId(market.assetFeedId as PublicKey);
   if (!symbol) {
     throw new BadRequestError(
-      `No known Pyth price_update account for feed ${(market.assetFeedId as PublicKey).toBase58()}`,
+      `No known Pyth feed for ${(market.assetFeedId as PublicKey).toBase58()}`,
     );
   }
-  const priceUpdate = priceUpdateAccountForSymbol(symbol);
+  // Pull a fresh price from Hermes and post it on-chain ourselves — see pyth-updater.ts's
+  // docblock for why a static, previously-posted account isn't good enough here.
+  const feedIdHex = (market.assetFeedId as PublicKey).toBuffer().toString("hex");
+  const priceUpdate = await postFreshPriceUpdate(feedIdHex);
 
   const [riskConfigPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("risk"), (market.assetFeedId as PublicKey).toBuffer()],

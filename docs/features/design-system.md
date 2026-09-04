@@ -23,8 +23,8 @@ A Stacks-based design system in `app/`:
   Mono) live as CSS variables in `app/app/globals.css` and are mapped in `app/tailwind.config.js`.
 - Icons are downloaded Figma assets in `app/public/icons/`, wrapped by `atoms/icon.tsx`.
 
-The Next.js home route is empty until the landing/app shell is redesigned. Do not add a
-component gallery page unless asked.
+Landing and static app shells live under `app/` (`/`, `/connect`, `/market`, `/liquidity`).
+Do not add a component gallery page unless asked.
 
 ## Folder map
 
@@ -63,14 +63,19 @@ Form fields that originally followed `prefers-color-scheme` use Tailwind `dark:`
 **Atoms:** `Icon`, `Button` (`href` required, variants `neutral` \| `light` \| `dark`, sizes
 `small` \| `medium`, optional star `icon`), `Badge`, `TextButton`, `WishlistButton`,
 `NotificationBell`, `RadioButton`, `SubNavItem`, `CircleButton`, `CoupleArrows`, `FeatureItem`,
-`DropdownItem`, `Quantity`, `WidgetTitle`.
+`DropdownItem`, `Quantity`, `WidgetTitle`, `Checkbox`, `GradientGlow` (the blurred
+angular-gradient ring behind the landing hero / CTA).
 
 **Molecules:** `EmailField`, `TextField`, `LabeledInput`, `SearchField`, `SearchBox`,
 `SmallSearchBox`, `Dropdown`, `SelectField`, `ColorSelect`, `ColorMenu`, `RadioField`,
 `AccordionItem`, `PriceRange`, `MessageBar`, `MessageBarMobile`, `ProcessSteps`, `ProductCard`,
-`CatalogCard`, `ProductCardWide`, `WidgetProductCard`.
+`CatalogCard`, `ProductCardWide`, `WidgetProductCard`, `WalletOption`, `PositionRow`,
+`StatusPill`, `AssetChip`, `FilterDropdown`, `DetailRows`, `TokenMark`.
 
-**Organisms:** `HorizontalFilter`.
+**Organisms:** `HorizontalFilter`, landing sections (`LandingHeader`, `LandingHero`,
+`LandingHowItWorks`, `LandingValues`, `LandingCta`, `LandingFooter`), connect wallet
+(`ConnectWalletShell`, `ConnectWalletFlow`), app shell (`AppShell`, `AppNav`),
+`ConfirmTransactionModal`, `LiquidityPoolFlow`.
 
 `Button` and `Badge` wrap the matching shadcn primitives. `PriceRange` uses shadcn `Slider`;
 `AccordionItem` / `RadioField` keep the Figma APIs and compose `Separator` / the visual
@@ -81,12 +86,13 @@ Form fields that originally followed `prefers-color-scheme` use Tailwind `dark:`
 - Lives in `app/` (Next.js 14, App Router, TypeScript). `app/app/` is the App Router directory.
 - `cn()` (`clsx` + `tailwind-merge`) is the only class combiner.
 - Do not add `.module.css` files for DS components.
-- Do not extend `app/` into gated M7 flows (market list, Protect, positions, provide-liquidity)
-  until M6 unblocks them and the user asks.
+- Static UI shells for Market / Liquidity are present as Figma prototypes; they are not wired
+  to on-chain SDK flows until M6/M7.
 
 ## Verification
 
 - `npm run build` in `app/` (typecheck + static generation).
-- Home route renders an empty page (landing hero removed).
+- Routes: `/` (landing), `/connect`, `/market` (rewrites from `/app/market`), `/liquidity`
+  (rewrites from `/app/liquidity`).
 - Not verified: a visual gallery of every variant (no showcase page), light/dark OS theme on
-  every field, keyboard/accessibility pass.
+  every field, keyboard/accessibility pass, pixel match against every Figma breakpoint.

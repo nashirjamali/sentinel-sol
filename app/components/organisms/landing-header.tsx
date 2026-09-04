@@ -22,7 +22,7 @@ export function LandingHeader() {
           <Logo wordmark size={40} />
         </Link>
         <div className="hidden shrink-0 md:block">
-          <Button href="#" variant="dark" size="small">
+          <Button href="/connect" variant="dark" size="small">
             Launch App
           </Button>
         </div>

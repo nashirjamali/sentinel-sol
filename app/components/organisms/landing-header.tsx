@@ -4,7 +4,7 @@ import { Logo } from "@/components/atoms/logo";
 
 export function LandingHeader() {
   return (
-    <header className="relative z-20 w-full bg-neutrals-1 px-4 py-6 md:px-16 xl:px-40">
+    <header className="sticky top-0 z-20 w-full bg-neutrals-1 px-4 py-6 md:px-16 xl:px-40">
       <div className="relative mx-auto flex h-10 w-full min-w-0 max-w-[1440px] items-center justify-center md:justify-between">
         <nav className="hidden items-center gap-12 font-display text-button-2 text-neutrals-4 md:flex">
           <Link href="#how-it-works" className="hover:text-neutrals-8">
@@ -22,7 +22,7 @@ export function LandingHeader() {
           <Logo wordmark size={40} />
         </Link>
         <div className="hidden shrink-0 md:block">
-          <Button href="/connect" variant="dark" size="small">
+          <Button href="/app/market" variant="dark" size="small">
             Launch App
           </Button>
         </div>

@@ -7,9 +7,9 @@
 
 The frontend was styling Figma components with colocated CSS Modules, while the intended stack
 is Tailwind CSS plus shadcn/ui. That duplicated tokens, made variants hard to compose, and kept
-the kit from being a reusable design system. The static landing hero (`Header`, `Hero`,
-`CoverageLedger`) is also out of the way — it will be restructured later, not carried forward
-as the app shell.
+the kit from being a reusable design system. The original static landing hero (`Header`,
+`Hero`, `CoverageLedger`) was removed as part of that cleanup; the landing page has since been
+rebuilt from the Figma file out of the design system (see Component inventory).
 
 ## Solution
 
@@ -33,8 +33,9 @@ app/components/
   ui/           # shadcn primitives (cva + Radix). Import these only when composing a DS piece.
   atoms/        # smallest DS pieces (Button, Badge, Icon, …)
   molecules/    # compositions (fields, cards, menus, …)
-  organisms/    # page-level sections (HorizontalFilter)
-app/lib/utils.ts
+  organisms/    # page-level sections (landing sections, app shells, flows)
+app/lib/utils.ts          # cn()
+app/lib/design-frame.ts   # scales landing background art with the viewport
 app/components.json
 ```
 
@@ -81,6 +82,43 @@ angular-gradient ring behind the landing hero / CTA).
 `AccordionItem` / `RadioField` keep the Figma APIs and compose `Separator` / the visual
 `RadioButton` rather than forcing every variant onto Radix.
 
+## Landing background art
+
+The hero, values and CTA sections each sit on blurred gradient "rings" exported from Figma
+(`app/public/images/landing/*-ellipse-*.svg`; the hero generates its own via `GradientGlow`).
+They are positioned in the design's 1440px frame, which creates two recurring problems:
+
+- **Wide screens.** Art narrower than the viewport ends inside the section and shows the edge
+  of its own bounding box. `app/lib/design-frame.ts` re-expresses design pixels as fractions of
+  `max(1440px, 100vw)` so the art always overshoots. Used by the values section. The CTA
+  deliberately does *not* use it — its rings are ~2150px wide once blurred, so they already
+  overshoot, and scaling them up would raise them far enough to wash out the heading.
+- **Narrow screens.** The art is a fixed-width composition, so on mobile its bright centre
+  lands behind the copy. Hero and values dim their rings (`opacity-40 md:opacity-100`), and
+  values adds a radial scrim between the rings and the content.
+
+Two constraints to preserve when editing these:
+
+- Don't wrap a ring layer in a `transform` (including `-translate-x-1/2`) — it opens a stacking
+  context and cuts `mix-blend-color-dodge` / `mix-blend-overlay` rings off from the background
+  they blend against. Centre with `left: calc(50% - …)` instead.
+- Converting a Figma `top` to a CSS `bottom` is `frameHeight - top - elementHeight`; dropping
+  the element height silently drags the glow up over the copy.
+
+## Deliberate deviations from Figma
+
+The landing copy, the values sub-copy colour (`neutrals-6`) and the confirm-transaction modal
+were reconciled in both directions — the Figma file now matches the code, so a design-to-code
+pass should agree. One deviation remains on purpose:
+
+- **Values scrim** has no Figma equivalent. It is a radial darkening between the rings and the
+  content so the heading block stays legible; the Figma frame has the same contrast problem but
+  no way to express the fix. Don't remove it to "match the design".
+
+All buyer-facing copy follows the product-framing rule in `docs/PRD.md`: coverage language
+only, no DOWN/UP tokens or mint/swap mechanics. LP-facing surfaces (`/liquidity`) still state
+UP-side risk explicitly, which that rule allows.
+
 ## Implementation notes
 
 - Lives in `app/` (Next.js 14, App Router, TypeScript). `app/app/` is the App Router directory.
@@ -94,5 +132,8 @@ angular-gradient ring behind the landing hero / CTA).
 - `npm run build` in `app/` (typecheck + static generation).
 - Routes: `/` (landing), `/connect`, `/market` (rewrites from `/app/market`), `/liquidity`
   (rewrites from `/app/liquidity`).
+- Landing page checked for layout and text legibility at 375 / 768 / 1024 / 1440 (no
+  horizontal overflow at any width).
 - Not verified: a visual gallery of every variant (no showcase page), light/dark OS theme on
-  every field, keyboard/accessibility pass, pixel match against every Figma breakpoint.
+  every field, keyboard/accessibility pass, measured contrast ratios, pixel match against every
+  Figma breakpoint.

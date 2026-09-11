@@ -412,6 +412,101 @@ re-verify before demoing, these can go stale):
 
 ---
 
+## REST API (backend connector)
+
+Everything above is the raw on-chain interface (the 4 Anchor programs). The frontend doesn't
+call that directly — a backend REST API sits in between, so the frontend gets plain JSON over
+HTTP instead of having to derive PDAs, decode Anchor accounts, and run the LMSR math itself.
+
+```
+Frontend (Next.js)  ──HTTP/JSON──▶  Backend REST API  ──RPC──▶  Solana devnet (4 programs)
+```
+
+Implemented as Next.js Route Handlers under `app/app/api/**`, backed by a `server/services/*`
+seam (route handlers only ever call a service function, never touch RPC directly — see
+`docs/features/backend-api-scaffold.md` for that seam's own notes). All 17 routes below exist
+and are decoding/building against real on-chain state — no fixtures left anywhere in this
+layer. Status legend: ✅ done and tested (locally, against a seeded market) · 🟡 done but with a
+known gap, see the note · ⬜ not built.
+
+**Security rule that must never be broken**: the backend never holds or signs with a user's
+private key. For any action a user initiates (mint, swap, add/remove liquidity, redeem), the
+backend only *builds* an unsigned transaction — the user's own wallet signs it client-side. The
+backend only has its own keypair for one purpose: running the keeper role (`resolve_market` is
+permissionless by design, so it's safe for the backend to hold and sign with a dedicated keeper
+wallet funded with just enough SOL for tx fees — see `server/solana/anchor-keeper.ts`'s comment
+for why that key's blast radius is bounded even if it leaks).
+
+### Markets — read
+
+| Status | Method | Path | Returns |
+|---|---|---|---|
+| ✅ | GET | `/api/markets` | List of markets. `?asset=BTC\|ETH\|SOL` and `?status=active\|resolved` both filter server-side (invalid values → 400, not silently ignored) |
+| ✅ | GET | `/api/markets/:marketId` | Single market detail (strike, expiry, status, outcome, resolved price) |
+| ✅ | GET | `/api/markets/:marketId/pool` | AMM pool state + live DOWN/UP price (display-only LMSR estimate — see `server/solana/lmsr.ts`) |
+| ✅ | GET | `/api/assets` | BTC/ETH/SOL and their `RiskConfig` (`null` per-asset if `upsert_risk_config` hasn't run for it yet — a valid state, not an error) |
+
+🟡 **Known gap**: a market's `status` is only ever `"active"`/`"resolved"` — the pre-expiry
+`trading_halt_secs` window (see `RiskConfig`) isn't computed into a distinct `"haltedForTrading"`
+value yet, even though the `Market` type already has room for it. A frontend can't currently
+show "trading halted" proactively; it only finds out when a `mint`/`swap` tx reverts on-chain.
+
+### Positions — read, per wallet
+
+| Status | Method | Path | Returns |
+|---|---|---|---|
+| ✅ | GET | `/api/users/:wallet/positions` | DOWN/UP/LP balances for a wallet, across every market (0 for any ATA that's never been created — not an error) |
+| ✅ | GET | `/api/users/:wallet/positions/:marketId` | Same, scoped to one market |
+
+### Transactions — build unsigned, user's wallet signs
+
+Each of these returns a base64-serialized **unsigned** transaction; the frontend passes it to
+the connected wallet (`wallet-adapter`'s `signAndSendTransaction`) — the backend never sees a
+signature.
+
+| Status | Method | Path | Wraps instruction |
+|---|---|---|---|
+| ✅ | POST | `/api/tx/mint` | `mint_complete_set` |
+| ✅ | POST | `/api/tx/merge` | `merge_complete_set` |
+| ✅ | POST | `/api/tx/swap` | `swap` (idempotently creates the receiving-side ATA first — see `tx-service.ts`, `swap`'s accounts aren't `init_if_needed` on-chain) |
+| ✅ | POST | `/api/tx/add-liquidity` | `add_liquidity` |
+| ✅ | POST | `/api/tx/remove-liquidity` | `remove_liquidity` |
+| ✅ | POST | `/api/tx/redeem` | `redeem` (rejects with 400 if the market isn't `Resolved` yet, instead of letting the on-chain revert be the only signal) |
+| ⬜ | POST | `/api/tx/protect` | Not built. `docs/PRD.md`'s "Protect" UX is one user action (USDC in → net DOWN exposure out), but today that's two separate transactions (`tx/mint` then `tx/swap`) the frontend has to sequence itself. Solana supports multi-instruction transactions, so this could bundle both instructions into one `tx/protect` call — worth doing before relying on the frontend to compose it correctly. |
+
+### Keeper / ops — backend's own wallet, not the user's
+
+| Status | Method | Path | Notes |
+|---|---|---|---|
+| 🟡 | POST | `/api/keeper/resolve/:marketId` | Error paths verified (already-resolved → 400, not-yet-expired → 400, market not found → 404, and the keeper's signing wallet construction itself is confirmed working at runtime). **Not yet verified**: the actual happy path (a real successful resolution), since that needs a fresh, valid Pyth price update — local dev has no reliable way to fake one right now (tried; hit Surfpool tooling bugs, not a code issue — see session notes). Best validated against devnet, where `config/pyth-feeds.json`'s price accounts are real. |
+| ✅ | GET | `/api/cron/resolve-expired` | Scans all markets, resolves every expired-but-`Active` one, one failure doesn't block the rest. Auth-gated (`Authorization: Bearer $CRON_SECRET`, 401 without it) — point a scheduler (Vercel Cron once deployed there, or any external one) at it. Shares the same untested-happy-path caveat as the endpoint above, since it calls the same underlying resolve logic. |
+
+### Meta
+
+| Status | Method | Path | Returns |
+|---|---|---|---|
+| 🟡 | GET | `/api/health` | Still the original scaffold stub — returns `{"status":"ok"}` unconditionally. Doesn't actually check RPC connectivity or the keeper wallet's SOL balance yet, so it can't currently warn "the keeper is about to run out of gas" the way it's meant to. |
+| ✅ | GET | `/api/config` | Read-only `GlobalConfig` (admin, `paused`) |
+
+Deliberately **not** exposed over REST: `create_market`, `init_pool`, `upsert_risk_config`,
+`set_paused`, `set_pending_admin`/`accept_admin` — these are admin/operational actions, run
+directly via CLI/scripts against the deployed programs rather than through a public endpoint.
+Even if someone called a hypothetical `/api/admin/*` endpoint without authorization, the
+on-chain program would still reject it (`has_one = admin` constraints per
+`docs/libs/PROGRAM_SPEC.md`) — but not exposing the endpoint at all avoids the noise/attack
+surface for no benefit, since these actions aren't things end users are meant to trigger from
+the app.
+
+### Remaining known gaps, summarized
+
+1. `keeper/resolve` happy path — needs devnet to fully verify (see above).
+2. `GET /api/health` — doesn't check anything yet, just liveness.
+3. No `"haltedForTrading"` derived status on `Market` — frontend can't show it proactively.
+4. No `POST /api/tx/protect` — the PRD's single-action "Protect" flow currently needs the
+   frontend to sequence two calls (`tx/mint` then `tx/swap`) itself.
+
+---
+
 ## Notes for whoever integrates against this
 
 - This file documents the four Anchor programs directly — there's no hosted SDK yet (`M6` in

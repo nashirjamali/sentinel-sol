@@ -5,6 +5,11 @@ product for major crypto assets (BTC, ETH, SOL in the MVP phase). Every position
 collateralized in USDC — no synthetic leverage, no protocol default risk. Market resolution is
 purely parametric, driven by the Pyth price oracle, with no manual claims process.
 
+The mechanism is a binary DOWN/UP market, but the product is insurance: a buyer only ever holds
+DOWN, and the UP side belongs to liquidity providers. Anything a buyer reads talks about
+coverage, never about DOWN/UP tokens, complete sets or picking a side — see the product-framing
+rule in `docs/PRD.md`.
+
 Read in this order before starting work:
 1. `docs/PRD.md` — MVP scope, what is IN and OUT.
 2. `docs/architecture/ARCHITECTURE.md` — system overview and the reasoning behind it. The fuller
@@ -31,9 +36,10 @@ aren't program milestones) and `docs/product/personas.md`.
 Frontend application flows (market list, Protect, positions/redeem, provide-liquidity) are out
 of scope until `docs/product/planned/m7-frontend.md` is unblocked by M6 (the TypeScript SDK) —
 see `docs/PRD.md`. Ahead of that sequencing, `app/` holds a Tailwind + shadcn design system
-(atomic folders, no CSS Modules) and an empty home route — the landing hero was removed and
-will be restructured later; see `docs/features/design-system.md`. Don't extend `app/` into the
-gated application flows without the user explicitly asking.
+(atomic folders, no CSS Modules), a full landing page on `/`, and static UI shells on
+`/connect`, `/market` and `/liquidity` — no wallet connection, SDK integration, or live market
+data; see `docs/features/design-system.md`. Don't wire `app/` into the gated application flows
+without the user explicitly asking.
 
 ## Suggested repo layout
 

@@ -16,22 +16,30 @@ provide-liquidity, per the low-fidelity wireframes delivered separately (see
 the protocol during Phase 1 was meant to happen through the SDK (M6), the CLI, and tests, not a
 UI. The rationale: a frontend built against an unstable/unfinished on-chain surface is churn.
 
-## Note — design system (landing hero removed)
+## Note — design system and static shells
 
 A Next.js app (`app/`) now holds a Tailwind + shadcn design system under atomic folders
-(`ui/` / `atoms/` / `molecules/` / `organisms`). The static landing hero
-(`Header` / `Hero` / `CoverageLedger`) has been removed; the home route is empty until that
-shell is redesigned. No wallet connection, SDK integration, or live market data — see
-`docs/features/design-system.md`. Treat the rest of M7 (market list, Protect flow,
-positions/redeem, provide-liquidity) as still gated on M6.
+(`ui/` / `atoms/` / `molecules/` / `organisms`), plus static UI built from the Figma file:
+a full landing page on `/` (header, hero, how-it-works, values, CTA, footer) and app shells on
+`/connect`, `/market` and `/liquidity`.
+
+None of it is wired to the chain — no wallet connection, no SDK integration, no live market
+data. The screens hard-code their display values (they don't even read the `/api/markets`
+fixture yet). See `docs/features/design-system.md`. Treat the *behaviour* behind the rest of
+M7 (market list, Protect flow, positions/redeem, provide-liquidity) as still gated on M6.
 
 ## Scope
 
-- [ ] Market list.
+Each application flow below has a static UI shell built from the Figma file; the box stays
+unchecked until it is wired to the SDK and real market data (M6).
+
+- [ ] Market list. *(static shell: `/market`)*
 - [ ] "Protect" flow (mint + swap in one action, per `docs/PRD.md` functional requirement 3).
-- [ ] Positions / redeem view.
-- [ ] Provide-liquidity view.
-- [ ] Landing / app shell (restructure; previous static hero removed).
+      *(static shell: `/market`, Protect tab + confirm-transaction modal)*
+- [ ] Positions / redeem view. *(static shell: `/market`, Positions and History tabs)*
+- [ ] Provide-liquidity view. *(static shell: `/liquidity`)*
+- [x] Landing / app shell — landing page matched to the Figma design; connect-wallet shell
+      at `/connect`.
 - [x] Design system (Tailwind + shadcn, atomic folders) — see `docs/features/design-system.md`.
 
 ## Test coverage

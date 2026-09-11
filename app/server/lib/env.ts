@@ -15,5 +15,9 @@ function required(name: string, fallback?: string): string {
 
 export const env = {
   solanaRpcUrl: required("SOLANA_RPC_URL", "https://api.devnet.solana.com"),
+  solanaMainnetRpcUrl: required(
+    "SOLANA_MAINNET_RPC_URL",
+    "https://api.mainnet-beta.solana.com",
+  ),
   solanaCluster: required("SOLANA_CLUSTER", "devnet"),
 };

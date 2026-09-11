@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useAppKit, useAppKitAccount } from "@reown/appkit/react";
 import { Logo } from "@/components/atoms/logo";
 import { Button as UiButton } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { REOWN_PROJECT_ID } from "@/lib/wallet/appkit-config";
 
 export type AppNavActive = "market" | "liquidity";
 
@@ -21,7 +23,16 @@ const NAV_ITEMS: {
   { id: "docs", label: "Docs", href: "#" },
 ];
 
+function shortenAddress(address: string) {
+  if (address.length <= 8) return address;
+  return `${address.slice(0, 4)}…${address.slice(-4)}`;
+}
+
 export function AppNav({ active }: AppNavProps) {
+  const { open } = useAppKit();
+  const { isConnected, address } = useAppKitAccount();
+  const canConnect = Boolean(REOWN_PROJECT_ID);
+
   return (
     <header className="sticky top-0 z-30 w-full bg-neutrals-1">
       <div className="mx-auto flex h-20 w-full max-w-[1120px] items-center justify-between px-4 xl:px-0">
@@ -58,8 +69,15 @@ export function AppNav({ active }: AppNavProps) {
             })}
           </nav>
         </div>
-        <UiButton type="button" variant="dark" size="small">
-          8xKp…v2Qz
+        <UiButton
+          type="button"
+          variant="dark"
+          size="small"
+          className="active:scale-[0.98]"
+          disabled={!canConnect}
+          onClick={() => open({ view: isConnected ? "Account" : "Connect" })}
+        >
+          {isConnected && address ? shortenAddress(address) : "Connect wallet"}
         </UiButton>
       </div>
       <div className="h-px w-full bg-neutrals-3" />

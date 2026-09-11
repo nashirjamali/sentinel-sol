@@ -1,10 +1,13 @@
-import { AssetChip, type AssetSymbol } from "@/components/molecules/asset-chip";
-import { StatusPill } from "@/components/molecules/status-pill";
+"use client";
+
+import { TokenIcon } from "@/components/atoms/token-icon";
+import { TOKEN_ICONS } from "@/lib/wallet/token-icons";
 import { cn } from "@/lib/utils";
 
 type PositionRowProps = {
-  symbol: AssetSymbol;
+  symbol: string;
   name: string;
+  iconUrl?: string | null;
   strike: string;
   premium: string;
   status: string;
@@ -17,6 +20,7 @@ type PositionRowProps = {
 export function PositionRow({
   symbol,
   name,
+  iconUrl = null,
   strike,
   premium,
   status,
@@ -26,30 +30,47 @@ export function PositionRow({
   className,
 }: PositionRowProps) {
   return (
-    <div
+    <article
       className={cn(
-        "flex w-full items-center gap-4 overflow-clip rounded-[10px] border border-neutrals-3 bg-[#141517] p-5",
+        "flex w-full items-center gap-4 rounded-[10px] bg-neutrals-2 px-4 py-4 transition-colors duration-200 hover:bg-neutrals-3",
         className,
       )}
     >
-      <div className="w-[150px] shrink-0">
-        <AssetChip symbol={symbol} name={name} size="md" />
+      <TokenIcon src={iconUrl ?? TOKEN_ICONS[symbol] ?? null} symbol={symbol} size="md" />
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div className="flex min-w-0 items-baseline gap-2">
+          <span className="truncate font-body text-sm font-semibold leading-6 text-neutrals-8">
+            {symbol}
+          </span>
+          <span className="truncate font-body text-caption-2 text-neutrals-4">{name}</span>
+        </div>
+        <p className="m-0 truncate font-body text-sm leading-6 text-neutrals-8 tabular-nums">
+          {strike}
+        </p>
+        <p className="m-0 truncate font-body text-caption-2 text-neutrals-4 tabular-nums">
+          {premium}
+        </p>
       </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-clip whitespace-nowrap font-body">
-        <p className="m-0 text-sm leading-6 text-neutrals-7">{strike}</p>
-        <p className="m-0 text-caption-2 text-neutrals-4">{premium}</p>
-      </div>
-      <div className="flex w-[150px] shrink-0 flex-col items-end gap-1.5 overflow-clip">
-        <StatusPill variant={statusVariant}>{status}</StatusPill>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <span
+          className={cn(
+            "rounded px-2 py-0.5 font-body text-[11px] font-medium leading-5",
+            statusVariant === "success"
+              ? "bg-primary-4/15 text-primary-4"
+              : "bg-neutrals-3 text-neutrals-4",
+          )}
+        >
+          {status}
+        </span>
         <p
           className={cn(
-            "m-0 whitespace-nowrap font-body text-caption-2 text-neutrals-4",
+            "m-0 font-body text-caption-2 tabular-nums text-neutrals-4",
             metaClassName,
           )}
         >
           {meta}
         </p>
       </div>
-    </div>
+    </article>
   );
 }

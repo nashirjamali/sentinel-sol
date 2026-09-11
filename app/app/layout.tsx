@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Poppins, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import { AppKitProvider } from "@/components/providers/appkit-provider";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -35,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${dmSans.variable} ${poppins.variable} ${plexMono.variable}`}>
-        {children}
+        <AppKitProvider>{children}</AppKitProvider>
       </body>
     </html>
   );

@@ -7,12 +7,16 @@ type ConfirmTransactionModalProps = {
   open: boolean;
   onCancel: () => void;
   onConfirm: () => void;
+  coverage?: string;
+  youPay?: string;
 };
 
 export function ConfirmTransactionModal({
   open,
   onCancel,
   onConfirm,
+  coverage = "150 SOL",
+  youPay = "195.42 USDC",
 }: ConfirmTransactionModalProps) {
   if (!open) return null;
 
@@ -42,21 +46,20 @@ export function ConfirmTransactionModal({
         <div className="h-px w-full bg-neutrals-3" />
         <DetailRows
           rows={[
-            { label: "Action", value: "Buy protection (mint + swap)" },
-            { label: "Amount", value: "150 DOWN · SOL" },
+            { label: "Action", value: "Buy protection" },
+            { label: "Coverage", value: coverage },
             {
               label: "You pay",
-              value: "195.42 USDC",
+              value: youPay,
               valueClassName: "text-primary-4",
             },
             { label: "Network fee", value: "~0.00025 SOL" },
           ]}
         />
         <p className="m-0 font-body text-[11px] leading-5 text-neutrals-5">
-          This mints one DOWN and one UP token 1:1 against your USDC in a single
-          transaction, then swaps UP for USDC through the pool — leaving you
-          holding DOWN protection. Collateral stays locked in the vault until
-          redemption or expiry.
+          Your premium buys coverage in a single transaction. The full payout is
+          locked in an on-chain vault for the life of the policy, and settles
+          automatically at expiry. There is no claim to file.
         </p>
         <div className="flex w-full gap-3 overflow-clip">
           <UiButton

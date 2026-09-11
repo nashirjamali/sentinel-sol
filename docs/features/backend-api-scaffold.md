@@ -55,8 +55,9 @@ app/
   need per-cluster overrides (env-based) once a devnet/mainnet deployment exists — not built
   yet, since only localnet IDs exist today.
 - Fixture data in `market-service.ts` is the market list/detail shape for the future app
-  shell (the landing hero that previously consumed it has been removed; see
-  `docs/features/design-system.md`).
+  shell. Nothing in the UI consumes it yet: the static `/market` and `/liquidity` shells
+  hard-code their own display values, so `/api/markets` is currently exercised only by
+  direct requests. See `docs/features/design-system.md`.
 
 ## Verification
 

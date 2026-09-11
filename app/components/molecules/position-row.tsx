@@ -32,7 +32,7 @@ export function PositionRow({
   return (
     <article
       className={cn(
-        "flex w-full items-center gap-4 rounded-[12px] bg-neutrals-2 px-4 py-4 transition-colors duration-200 hover:bg-neutrals-3",
+        "flex w-full items-center gap-4 rounded-[10px] bg-neutrals-2 px-4 py-4 transition-colors duration-200 hover:bg-neutrals-3",
         className,
       )}
     >

@@ -59,7 +59,7 @@ export function ConfirmTransactionModal({
         <p className="m-0 font-body text-[11px] leading-5 text-neutrals-5">
           Your premium buys coverage in a single transaction. The full payout is
           locked in an on-chain vault for the life of the policy, and settles
-          automatically at expiry — there is no claim to file.
+          automatically at expiry. There is no claim to file.
         </p>
         <div className="flex w-full gap-3 overflow-clip">
           <UiButton

@@ -1,11 +1,6 @@
 import { SolanaAdapter } from "@reown/appkit-adapter-solana";
 import { solana, solanaDevnet } from "@reown/appkit/networks";
 import type { AppKitNetwork } from "@reown/appkit/networks";
-import {
-  CoinbaseWalletAdapter,
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-} from "@solana/wallet-adapter-wallets";
 
 export const REOWN_PROJECT_ID = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID ?? "";
 
@@ -14,13 +9,7 @@ export const solanaNetworks: [AppKitNetwork, ...AppKitNetwork[]] =
     ? [solana, solanaDevnet]
     : [solanaDevnet, solana];
 
-export const solanaAdapter = new SolanaAdapter({
-  wallets: [
-    new PhantomWalletAdapter(),
-    new SolflareWalletAdapter(),
-    new CoinbaseWalletAdapter(),
-  ],
-});
+export const solanaAdapter = new SolanaAdapter();
 
 export const appKitMetadata = {
   name: "Sentinels",

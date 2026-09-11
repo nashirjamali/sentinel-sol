@@ -66,33 +66,27 @@ export function AppShell({ activeNav, children, lockViewport = false }: AppShell
   const { isConnected } = useAppKitAccount();
 
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-neutrals-1">
-      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden>
-        <div className="absolute inset-x-0 top-[-45px] h-[1380px]">
-          <img
-            src="/images/app/bg-glow.png"
-            alt=""
-            className="absolute left-0 top-[395px] h-[1046px] w-full max-w-none object-cover"
-          />
-          <div className="absolute inset-0 bg-neutrals-1/5 backdrop-blur-[100px]" />
-        </div>
-      </div>
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col">
-        <AppNav active={resolved} />
+    <div
+      className={cn(
+        "relative flex flex-col overflow-hidden bg-neutrals-1",
+        lockViewport ? "h-dvh" : "min-h-dvh",
+      )}
+    >
+      <AppNav active={resolved} />
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col",
+          lockViewport ? "overflow-hidden" : "overflow-y-auto",
+        )}
+      >
         <div
           className={cn(
-            "flex min-h-0 flex-1 flex-col",
-            lockViewport ? "overflow-y-auto lg:overflow-hidden" : "overflow-y-auto",
+            "w-full",
+            isConnected ? "mx-auto" : "m-auto",
+            lockViewport && isConnected && "h-full min-h-0 flex-1",
           )}
         >
-          <div
-            className={cn(
-              "m-auto w-full",
-              lockViewport && "lg:flex lg:h-full lg:min-h-0 lg:flex-1 lg:flex-col lg:justify-center",
-            )}
-          >
-            {isConnected ? children : <ConnectPrompt />}
-          </div>
+          {isConnected ? children : <ConnectPrompt />}
         </div>
       </div>
     </div>

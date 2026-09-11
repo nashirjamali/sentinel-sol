@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
-import { Manrope, IBM_Plex_Mono } from "next/font/google";
+import { DM_Sans, Poppins, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import { AppKitProvider } from "@/components/providers/appkit-provider";
 
-const manrope = Manrope({
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["700"],
+  style: ["normal", "italic"],
   variable: "--font-display",
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-body",
 });
 
 const plexMono = IBM_Plex_Mono({
@@ -27,8 +35,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${manrope.variable} ${plexMono.variable}`}>
-        {children}
+      <body className={`${dmSans.variable} ${poppins.variable} ${plexMono.variable}`}>
+        <AppKitProvider>{children}</AppKitProvider>
       </body>
     </html>
   );

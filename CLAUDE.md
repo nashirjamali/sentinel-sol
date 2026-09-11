@@ -5,6 +5,11 @@ product for major crypto assets (BTC, ETH, SOL in the MVP phase). Every position
 collateralized in USDC — no synthetic leverage, no protocol default risk. Market resolution is
 purely parametric, driven by the Pyth price oracle, with no manual claims process.
 
+The mechanism is a binary DOWN/UP market, but the product is insurance: a buyer only ever holds
+DOWN, and the UP side belongs to liquidity providers. Anything a buyer reads talks about
+coverage, never about DOWN/UP tokens, complete sets or picking a side — see the product-framing
+rule in `docs/PRD.md`.
+
 Read in this order before starting work:
 1. `docs/PRD.md` — MVP scope, what is IN and OUT.
 2. `docs/architecture/ARCHITECTURE.md` — system overview and the reasoning behind it. The fuller
@@ -30,10 +35,11 @@ aren't program milestones) and `docs/product/personas.md`.
 
 Frontend application flows (market list, Protect, positions/redeem, provide-liquidity) are out
 of scope until `docs/product/planned/m7-frontend.md` is unblocked by M6 (the TypeScript SDK) —
-see `docs/PRD.md`. The one exception: a static landing hero (`app/`, Next.js — no wallet
-connection, no SDK integration) has been built ahead of that sequencing at the user's explicit
-direction; see `docs/features/landing-hero.md`. Don't extend `app/` into the gated application
-flows without the user explicitly asking, same as the hero itself required.
+see `docs/PRD.md`. Ahead of that sequencing, `app/` holds a Tailwind + shadcn design system
+(atomic folders, no CSS Modules), a full landing page on `/`, and static UI shells on
+`/connect`, `/market` and `/liquidity` — no wallet connection, SDK integration, or live market
+data; see `docs/features/design-system.md`. Don't wire `app/` into the gated application flows
+without the user explicitly asking.
 
 ## Suggested repo layout
 
@@ -45,7 +51,7 @@ programs/
   resolution/        # reads Pyth, determines outcome
 tests/
   <same name as program>.ts
-app/                 # Next.js frontend package (landing hero only — see Tech stack above)
+app/                 # Next.js frontend package (design system + empty home — see Tech stack)
 docs/
   architecture/       # system design
   libs/                # PROGRAM_SPEC.md, API.md — implementation source of truth

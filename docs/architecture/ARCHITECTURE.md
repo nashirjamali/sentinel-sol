@@ -33,7 +33,7 @@ An automated Underwriting Vault, an Insurance Backstop Fund, and DAO governance 
 ```
                      ┌───────────────────────┐
                      │  TS client / CLI /     │
-                     │  tests (no UI yet)     │
+                     │  tests (UI unwired)    │
                      └───────────┬───────────┘
                                  │ tx: mint / swap / add-liq / redeem
                                  ▼
@@ -87,5 +87,6 @@ force-burned).
   **must** be replaced with a multisig before any real funds touch mainnet.
 - No insurance backstop fund — if a pool's UP side loses badly, LPs bear it in full (bounded by
   the `b` parameter, but still potentially significant).
-- No frontend. Interaction is through the TypeScript client, CLI, and tests only during this
-  phase — see `PRD.md` scope OUT.
+- No frontend *interaction*. `app/` has a landing page and static UI shells, but nothing in it
+  reaches the chain: all protocol interaction during this phase is through the TypeScript
+  client, CLI, and tests — see `PRD.md` scope OUT.

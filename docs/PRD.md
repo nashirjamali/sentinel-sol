@@ -6,6 +6,24 @@ Prove that the core Sentinels mechanism — a fully-collateralized binary market
 parametrically from a price oracle — works safely on Solana, with the smallest scope that is
 still end-to-end (open a position → trade → resolve → redeem).
 
+## Product framing — insurance, not a prediction market
+
+The mechanism is a binary DOWN/UP market; the *product* is downside insurance. Both statements
+are true and they must not be collapsed into one another:
+
+- **Mechanism (this document, `ARCHITECTURE.md`, `PROGRAM_SPEC.md`).** Complete DOWN + UP sets
+  are minted 1:1 against USDC and both tokens exist — the 1:1 collateral invariant depends on
+  it. Describe this plainly in technical docs.
+- **Product.** A buyer only ever ends up holding DOWN. The UP side is the underwriter's, taken
+  by liquidity providers (see `product/personas.md`). Nobody is sold a bet on the price going
+  up.
+
+**Rule for anything a buyer reads** — UI copy, marketing, the Figma file: describe it as
+coverage (deposit, coverage amount, expiry, strike, premium, payout). Do not surface DOWN/UP
+tokens, "complete sets", "mint and swap", "pick a side", or any other prediction-market
+framing; those are implementation details. LP-facing surfaces are the exception — underwriters
+need the UP-side risk stated explicitly.
+
 ## Target users (MVP)
 
 - BTC/ETH/SOL holders who want short-term (weekly) price protection.
@@ -34,9 +52,10 @@ correctness, not scale.
 - Frontend application flows. Only low-fidelity wireframes exist for these at this stage (see
   the delivered wireframe file) — no working UI for market list / Protect / redeem /
   provide-liquidity is built during the MVP program-implementation phase. Program interaction
-  happens via the Anchor TypeScript client / CLI / tests. (A static landing hero with no
-  protocol interaction has been built ahead of schedule — see `docs/features/landing-hero.md`
-  and `docs/product/planned/m7-frontend.md`.)
+  happens via the Anchor TypeScript client / CLI / tests. (`app/` holds a design system, a
+  landing page, and static UI shells for connect / market / liquidity — none of them wired to
+  the chain — see `docs/features/design-system.md` and
+  `docs/product/planned/m7-frontend.md`.)
 - CLOB / order matching for large sizes — MVP is LMSR-only.
 - Automated Underwriting Vault with cross-market allocation.
 - Insurance Backstop Fund.

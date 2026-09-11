@@ -25,7 +25,7 @@ import {
   type WalletAsset,
 } from "@/lib/wallet/assets";
 import { cn } from "@/lib/utils";
-import { CBBTC_ICON, SOL_ICON, WBTC_ICON } from "@/lib/wallet/token-icons";
+import { APP_ASSETS, TOKEN_FILTER_OPTIONS } from "@/lib/wallet/token-icons";
 
 type MarketTab = "protect" | "positions" | "history";
 
@@ -51,20 +51,18 @@ const DEFAULT_EXPIRY_INDEX = 2;
 const PREMIUM_RATE_PER_DAY = 195.42 / (150 * 142.85) / 7;
 const NATIVE_SOL_MINT = "So11111111111111111111111111111111111111112";
 
+const [SOL, CBBTC, WBTC] = APP_ASSETS;
+
 const POSITIONS = [
   {
-    symbol: "SOL",
-    name: "Solana",
-    iconUrl: SOL_ICON,
+    ...SOL,
     strike: "$148.22",
     premium: "$187.40",
     status: "Active",
     meta: "4d",
   },
   {
-    symbol: "cbBTC",
-    name: "Coinbase Wrapped BTC",
-    iconUrl: CBBTC_ICON,
+    ...CBBTC,
     strike: "$78,114.60",
     premium: "$312.85",
     status: "Active",
@@ -74,9 +72,7 @@ const POSITIONS = [
 
 const HISTORY = [
   {
-    symbol: "WBTC",
-    name: "Wrapped BTC",
-    iconUrl: WBTC_ICON,
+    ...WBTC,
     strike: "$76,420.00",
     premium: "$241.10",
     status: "Paid out",
@@ -87,9 +83,7 @@ const HISTORY = [
     metaClassName: "text-primary-4",
   },
   {
-    symbol: "SOL",
-    name: "Solana",
-    iconUrl: SOL_ICON,
+    ...SOL,
     strike: "$128.10",
     premium: "$96.75",
     status: "No payout",
@@ -100,9 +94,7 @@ const HISTORY = [
     metaClassName: undefined,
   },
   {
-    symbol: "cbBTC",
-    name: "Coinbase Wrapped BTC",
-    iconUrl: CBBTC_ICON,
+    ...CBBTC,
     strike: "$74,880.00",
     premium: "$268.40",
     status: "Paid out",
@@ -113,9 +105,7 @@ const HISTORY = [
     metaClassName: "text-primary-4",
   },
   {
-    symbol: "SOL",
-    name: "Solana",
-    iconUrl: SOL_ICON,
+    ...SOL,
     strike: "$151.30",
     premium: "$88.20",
     status: "No payout",
@@ -245,9 +235,9 @@ function MarketPageContent() {
 
   return (
     <AppShell lockViewport>
-      <main className="mx-auto flex h-full min-h-0 w-full max-w-[1140px] flex-col gap-5 px-4 py-8 xl:px-0 xl:py-16">
-        <header className="flex w-full shrink-0 flex-col gap-3">
-          <h1 className="m-0 max-w-[22ch] text-balance font-display text-[32px] font-bold leading-10 tracking-[-0.32px] text-neutrals-8">
+      <main className="mx-auto flex h-full min-h-0 w-full max-w-[1140px] flex-col gap-4 px-4 py-6 sm:gap-5 sm:py-8 xl:px-0 xl:py-16">
+        <header className="flex w-full shrink-0 flex-col gap-2 sm:gap-3">
+          <h1 className="m-0 max-w-[22ch] text-balance font-display text-[24px] font-bold leading-8 tracking-[-0.24px] text-neutrals-8 sm:text-[32px] sm:leading-10 sm:tracking-[-0.32px]">
             {copy.title}
           </h1>
           <p className="m-0 max-w-[65ch] text-pretty font-body text-caption-2 leading-5 text-neutrals-5">
@@ -255,8 +245,8 @@ function MarketPageContent() {
           </p>
         </header>
 
-        <div className="flex min-h-0 w-full flex-1 flex-col gap-[34px]">
-          <div className="flex shrink-0 items-center py-4">
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-4 sm:gap-[34px]">
+          <div className="flex shrink-0 items-center py-2 sm:py-4">
             <div className="flex items-start gap-3">
               {TABS.map((item) => (
                 <SubNavItem
@@ -374,13 +364,13 @@ function ProtectPanel({ onBuy }: { onBuy: (quote: ProtectQuote) => void }) {
       : `0 ${asset?.symbol ?? ""}`.trim();
 
   return (
-    <div className="grid min-h-0 w-full flex-1 grid-cols-1 gap-x-[49px] gap-y-8 lg:grid-cols-2 lg:items-stretch">
-      <div className="flex flex-col gap-[25px]">
-        <div className="flex h-12 w-full items-center justify-between gap-3">
+    <div className="grid min-h-0 w-full flex-1 grid-cols-1 gap-6 lg:grid-cols-2 lg:items-stretch lg:gap-x-[49px] lg:gap-y-8">
+      <div className="flex flex-col gap-5 lg:gap-[25px]">
+        <div className="flex min-h-12 w-full items-center justify-between gap-3">
           <Select value={asset?.id ?? selectedId} onValueChange={applyAsset} disabled={assetsLoading}>
             <SelectTrigger
               aria-label="Select asset"
-              className="group h-auto w-[217px] gap-[10px] rounded-pill border-0 bg-neutrals-2 px-4 py-2 text-neutrals-8 transition-colors duration-200 hover:bg-neutrals-3 focus-visible:border-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-1"
+              className="group h-auto min-w-0 max-w-[217px] flex-1 gap-[10px] rounded-pill border-0 bg-neutrals-2 px-3 py-2 text-neutrals-8 transition-colors duration-200 hover:bg-neutrals-3 focus-visible:border-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-1 sm:w-[217px] sm:flex-none sm:px-4"
             >
               <span className="flex min-w-0 flex-1 items-center gap-2.5">
                 {assetsLoading ? (
@@ -391,7 +381,7 @@ function ProtectPanel({ onBuy }: { onBuy: (quote: ProtectQuote) => void }) {
                 <span className="truncate font-body text-sm font-medium leading-6 text-neutrals-8">
                   {asset?.symbol ?? "SOL"}
                 </span>
-                <span className="truncate font-body text-sm leading-6 text-neutrals-4">
+                <span className="hidden truncate font-body text-sm leading-6 text-neutrals-4 sm:inline">
                   {asset?.name ?? "Solana"}
                 </span>
               </span>
@@ -405,7 +395,7 @@ function ProtectPanel({ onBuy }: { onBuy: (quote: ProtectQuote) => void }) {
             </SelectTrigger>
             <SelectContent
               align="start"
-              className="min-w-[360px] rounded-[10px] border-neutrals-3 bg-neutrals-2"
+              className="w-[min(360px,calc(100vw-2rem))] rounded-[10px] border-neutrals-3 bg-neutrals-2"
             >
               {assets.map((item) => (
                 <SelectItem
@@ -463,11 +453,11 @@ function ProtectPanel({ onBuy }: { onBuy: (quote: ProtectQuote) => void }) {
 
         <div
           className={cn(
-            "flex w-full flex-col gap-4 rounded-[10px] border bg-neutrals-1 px-[33px] py-6 transition-colors duration-200 focus-within:border-primary-1",
+            "flex w-full flex-col gap-4 rounded-[10px] border bg-neutrals-1 px-4 py-5 transition-colors duration-200 focus-within:border-primary-1 sm:px-[33px] sm:py-6",
             exceedsBalance ? "border-primary-3" : "border-neutrals-3",
           )}
         >
-          <div className="flex h-12 w-full items-center justify-between gap-4">
+          <div className="flex min-h-12 w-full flex-col items-start gap-1 sm:h-12 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <label className="sr-only" htmlFor="coverage-amount">
               Coverage amount in {asset?.symbol ?? "SOL"}
             </label>
@@ -478,14 +468,14 @@ function ProtectPanel({ onBuy }: { onBuy: (quote: ProtectQuote) => void }) {
               autoComplete="off"
               value={amountInput}
               onChange={(event) => handleAmountChange(event.target.value)}
-              className="min-w-0 flex-1 border-none bg-transparent p-0 font-display text-[40px] font-bold leading-[48px] tracking-[-0.4px] text-neutrals-8 caret-primary-1 tabular-nums outline-none placeholder:text-neutrals-4"
+              className="min-w-0 w-full border-none bg-transparent p-0 font-display text-[32px] font-bold leading-10 tracking-[-0.32px] text-neutrals-8 caret-primary-1 tabular-nums outline-none placeholder:text-neutrals-4 sm:flex-1 sm:text-[40px] sm:leading-[48px] sm:tracking-[-0.4px]"
               placeholder="0"
             />
-            <span className="shrink-0 font-body text-base font-medium leading-6 text-neutrals-5 tabular-nums">
+            <span className="shrink-0 font-body text-sm font-medium leading-6 text-neutrals-5 tabular-nums sm:text-base">
               ≈ ${formatUsd(coverageUsd)} protected
             </span>
           </div>
-          <div className="flex w-full items-center justify-between gap-4">
+          <div className="flex w-full items-end justify-between gap-4 sm:items-center">
             <div className="font-body text-caption-2 tabular-nums">
               <p
                 className={cn(
@@ -515,7 +505,7 @@ function ProtectPanel({ onBuy }: { onBuy: (quote: ProtectQuote) => void }) {
           </div>
         </div>
 
-        <div className="flex w-full flex-col justify-center gap-2.5 rounded-[10px] border border-neutrals-4 bg-neutrals-1 px-6 py-4">
+        <div className="flex w-full flex-col justify-center gap-2.5 rounded-[10px] border border-neutrals-4 bg-neutrals-1 px-4 py-4 sm:px-6">
           <div className="flex h-[33px] w-full items-center justify-between font-body font-medium text-neutrals-8">
             <span className="text-base leading-6">Expiry</span>
             <span className="text-sm leading-6 tabular-nums">{expiryLabel}</span>
@@ -548,7 +538,7 @@ function ProtectPanel({ onBuy }: { onBuy: (quote: ProtectQuote) => void }) {
         </div>
       </div>
 
-      <aside className="flex h-full min-h-0 flex-col gap-8 rounded-[10px] bg-neutrals-2 px-8 py-4 shadow-[inset_0_1px_0_rgba(252,252,253,0.06)]">
+      <aside className="flex h-auto min-h-0 flex-col gap-6 rounded-[10px] bg-neutrals-2 px-5 py-5 shadow-[inset_0_1px_0_rgba(252,252,253,0.06)] sm:px-8 sm:py-4 lg:h-full lg:gap-8">
         <div className="flex w-full flex-col gap-1">
           <p className="m-0 font-body text-body-2 text-neutrals-5">You pay</p>
           <p className="m-0 font-display text-[32px] font-bold leading-10 tracking-[-0.32px] text-neutrals-8 tabular-nums">
@@ -577,7 +567,7 @@ function ProtectPanel({ onBuy }: { onBuy: (quote: ProtectQuote) => void }) {
           type="button"
           variant="neutral"
           size="medium"
-          className="mt-auto h-12 w-full whitespace-nowrap"
+          className="mt-auto h-12 w-full whitespace-normal sm:whitespace-nowrap"
           disabled={!canBuy}
           onClick={() =>
             onBuy({
@@ -596,13 +586,6 @@ function ProtectPanel({ onBuy }: { onBuy: (quote: ProtectQuote) => void }) {
     </div>
   );
 }
-
-const TOKEN_FILTER_OPTIONS = [
-  { value: "all", label: "All tokens" },
-  { value: "SOL", label: "SOL · Solana" },
-  { value: "cbBTC", label: "cbBTC · Coinbase Wrapped BTC" },
-  { value: "WBTC", label: "WBTC · Wrapped BTC" },
-];
 
 type PolicyTableRow = {
   symbol: string;
@@ -631,8 +614,8 @@ function PolicyTable({
   if (rows.length === 0) return <>{empty}</>;
 
   return (
-    <div className="min-h-0 w-full flex-1 overflow-auto">
-      <table className="w-full border-collapse text-left">
+    <div className="min-h-0 w-full flex-1 overflow-x-auto lg:overflow-auto">
+      <table className="w-full min-w-[640px] border-collapse text-left">
         <thead className="sticky top-0 bg-neutrals-1">
           <tr className="border-b border-neutrals-3">
             <th className="px-4 py-3 font-body text-caption-2 font-medium text-neutrals-4">Asset</th>
@@ -702,7 +685,7 @@ function PositionsPanel({ onProtect }: { onProtect: () => void }) {
   const rows = POSITIONS.filter((row) => token === "all" || row.symbol === token);
 
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col gap-4 overflow-hidden">
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-4 lg:overflow-hidden">
       <FilterDropdown
         label="Token"
         aria-label="Filter by token"
@@ -747,8 +730,8 @@ function HistoryPanel() {
   });
 
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col gap-4 overflow-hidden">
-      <div className="flex w-full shrink-0 gap-3">
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-4 lg:overflow-hidden">
+      <div className="flex w-full shrink-0 flex-col gap-3 sm:flex-row">
         <FilterDropdown
           label="Outcome"
           aria-label="Filter by outcome"

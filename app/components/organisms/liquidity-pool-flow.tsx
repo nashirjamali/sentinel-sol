@@ -1,318 +1,231 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
 import { SubNavItem } from "@/components/atoms/sub-nav-item";
-import { PositionRow } from "@/components/molecules/position-row";
-import { TokenMark, type TokenSymbol } from "@/components/molecules/token-mark";
+import { TokenIcon } from "@/components/atoms/token-icon";
+import { DetailRows } from "@/components/molecules/detail-rows";
+import { FilterDropdown } from "@/components/molecules/filter-dropdown";
+import { StatusPill } from "@/components/molecules/status-pill";
+import { AppShell } from "@/components/organisms/app-shell";
+import { ConfirmTransactionModal } from "@/components/organisms/confirm-transaction-modal";
 import { Button as UiButton } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
+import {
+  fetchWalletAssets,
+  parseWalletAddress,
+  type SolanaCluster,
+} from "@/lib/wallet/assets";
 import { cn } from "@/lib/utils";
+import { APP_ASSETS, TOKEN_FILTER_OPTIONS, TOKEN_ICONS } from "@/lib/wallet/token-icons";
 
-type TabId = "add" | "remove" | "position";
+type LiquidityTab = "add" | "remove" | "position";
 
-const TABS: { id: TabId; label: string }[] = [
+type LiquidityQuote = {
+  action: string;
+  rows: { label: string; value: string; valueClassName?: string }[];
+  note: string;
+};
+
+const TABS: { id: LiquidityTab; label: string }[] = [
   { id: "add", label: "Add" },
   { id: "remove", label: "Remove" },
   { id: "position", label: "My Position" },
 ];
 
-const STATS = [
-  { value: "$2,148,320", label: "Total value locked" },
-  { value: "$184,660", label: "24h volume" },
-  { value: "$1,700.00", label: "Your total deposits" },
-];
+const PAGE_COPY = {
+  title: "Provide liquidity, earn the spread",
+  subtitle:
+    "Underwrite the AMM pool and earn a share of trading fees for taking on UP-side risk. Add or withdraw at any time before expiry.",
+} as const;
 
-const POOLS: {
-  symbol: TokenSymbol;
-  tvl: string;
-  apr: string;
-}[] = [
-  { symbol: "SOL", tvl: "$482,940", apr: "18.4% APR" },
-  { symbol: "BTC", tvl: "$1,082,110", apr: "12.1% APR" },
-  { symbol: "ETH", tvl: "$583,270", apr: "15.7% APR" },
-];
+const [SOL, CBBTC, WBTC] = APP_ASSETS;
 
-const SIDEBAR_POSITIONS: {
-  symbol: TokenSymbol;
-  amount: string;
-  fees: string;
-}[] = [
-  { symbol: "SOL", amount: "$500.00", fees: "+$21.30 fees" },
-  { symbol: "BTC", amount: "$1,200.00", fees: "+$48.60 fees" },
-];
-
-const MY_POSITIONS: {
-  symbol: TokenSymbol;
-  name: string;
-  deposited: string;
-  fees: string;
-  share: string;
-}[] = [
+const POOLS = [
   {
-    symbol: "SOL",
-    name: "Solana",
-    deposited: "Deposited $500.00",
-    fees: "Fees earned +$21.30",
-    share: "Share 3.2%",
+    id: SOL.symbol,
+    ...SOL,
+    tvl: 482940,
+    apr: 18.4,
+    utilization: 62,
+    lpSymbol: "sLP-SOL",
   },
   {
-    symbol: "BTC",
-    name: "Bitcoin",
-    deposited: "Deposited $1,200.00",
-    fees: "Fees earned +$48.60",
-    share: "Share 1.8%",
+    id: CBBTC.symbol,
+    ...CBBTC,
+    tvl: 1082110,
+    apr: 12.1,
+    utilization: 48,
+    lpSymbol: "sLP-cbBTC",
   },
-];
+  {
+    id: WBTC.symbol,
+    ...WBTC,
+    tvl: 583270,
+    apr: 15.7,
+    utilization: 55,
+    lpSymbol: "sLP-WBTC",
+  },
+] as const;
 
-function UtilizationBar() {
-  return (
-    <div className="flex w-full flex-col gap-2.5">
-      <div className="flex w-full items-center justify-between font-body font-medium text-neutrals-8">
-        <span className="text-base leading-6">Pool utilization</span>
-        <span className="text-sm leading-6">62%</span>
-      </div>
-      <div className="relative h-3 w-full overflow-hidden">
-        <img
-          src="/icons/expiry-slider.svg"
-          alt=""
-          width={512}
-          height={12}
-          className="absolute inset-0 size-full max-w-none"
-        />
-      </div>
-      <div className="flex w-full items-center justify-between font-body text-caption-2 text-neutrals-8">
-        <span>Low</span>
-        <span>Medium</span>
-        <span>High</span>
-      </div>
-    </div>
-  );
+const MY_POSITIONS = [
+  {
+    id: SOL.symbol,
+    ...SOL,
+    deposited: 500,
+    fees: 21.3,
+    lp: 500,
+    share: "3.2%",
+  },
+  {
+    id: CBBTC.symbol,
+    ...CBBTC,
+    deposited: 1200,
+    fees: 48.6,
+    lp: 1200,
+    share: "1.8%",
+  },
+  {
+    id: WBTC.symbol,
+    ...WBTC,
+    deposited: 350,
+    fees: 11.4,
+    lp: 350,
+    share: "2.1%",
+  },
+] as const;
+
+function parseTab(value: string | null): LiquidityTab {
+  if (value === "remove" || value === "position" || value === "add") {
+    return value;
+  }
+  return "add";
 }
 
-function SummaryRow({
-  label,
-  value,
-  valueClassName,
-}: {
-  label: string;
-  value: string;
-  valueClassName?: string;
-}) {
-  return (
-    <div className="flex w-full items-center justify-between text-caption-2 text-neutrals-8">
-      <span className="font-body font-normal">{label}</span>
-      <span className={cn("font-body font-semibold", valueClassName)}>{value}</span>
-    </div>
-  );
+function formatUsd(value: number, digits = 2) {
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
 }
 
-function AssetSelector({
-  metaValue,
-  metaLabel,
-}: {
-  metaValue: string;
-  metaLabel: string;
-}) {
-  return (
-    <div className="flex w-full items-center justify-between">
-      <button
-        type="button"
-        className="flex w-[217px] items-center gap-[37px] rounded-pill bg-neutrals-2 px-4 py-2"
-      >
-        <span className="flex flex-1 items-center gap-2.5">
-          <TokenMark symbol="SOL" />
-          <span className="font-body text-sm font-medium leading-6 text-neutrals-8">SOL</span>
-          <span className="font-body text-sm font-normal leading-6 text-neutrals-4">Solana</span>
-        </span>
-        <img
-          src="/icons/arrow-down-simple-line.svg"
-          alt=""
-          width={24}
-          height={24}
-          className="size-6 shrink-0"
-        />
-      </button>
-      <div className="flex flex-col items-end font-body text-sm font-medium leading-6">
-        <span className="text-neutrals-8">{metaValue}</span>
-        <span className="text-neutrals-5">{metaLabel}</span>
-      </div>
-    </div>
-  );
+function formatTokenAmount(value: number) {
+  if (Number.isInteger(value)) return String(value);
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 4,
+  });
 }
 
-function AmountBox({
-  amount,
-  conversion,
-  helper,
-  onMax,
-}: {
-  amount: string;
-  conversion: string;
-  helper: string;
-  onMax: () => void;
-}) {
-  return (
-    <div className="flex w-full flex-col gap-4 rounded-[10px] border border-neutrals-3 bg-neutrals-1 px-[33px] py-6">
-      <div className="flex h-12 w-full items-center justify-between">
-        <span className="font-display text-[40px] font-bold leading-[48px] tracking-[-0.4px] text-neutrals-8">
-          {amount}
-        </span>
-        <span className="font-body text-base font-medium leading-6 text-neutrals-5">
-          {conversion}
-        </span>
-      </div>
-      <div className="flex w-full items-center justify-between">
-        <span className="font-body text-caption-2 text-neutrals-4">{helper}</span>
-        <UiButton type="button" variant="dark" size="small" onClick={onMax}>
-          Max
-        </UiButton>
-      </div>
-    </div>
-  );
+function parseAmount(raw: string) {
+  const cleaned = raw.replace(/,/g, "").trim();
+  if (cleaned === "" || cleaned === ".") return null;
+  const next = Number(cleaned);
+  if (!Number.isFinite(next) || next < 0) return null;
+  return next;
 }
 
-function LiquiditySidebar() {
-  return (
-    <aside className="flex h-full min-h-[717px] w-full flex-col gap-6 overflow-clip rounded-[10px] border border-neutrals-3 bg-[#141517] p-6 xl:w-[448px]">
-      <h2 className="m-0 font-body text-base font-medium leading-6 text-neutrals-8">Pools</h2>
-      {POOLS.map((pool) => (
-        <div key={pool.symbol} className="flex w-full items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <TokenMark symbol={pool.symbol} />
-            <span className="font-body text-sm font-medium leading-6 text-neutrals-8">
-              {pool.symbol}
-            </span>
-          </div>
-          <div className="flex flex-col items-end gap-0.5 text-right font-body font-medium">
-            <span className="text-[13px] leading-6 text-neutrals-8">{pool.tvl}</span>
-            <span className="text-[11px] leading-6 text-[#8b5cf6]">{pool.apr}</span>
-          </div>
-        </div>
-      ))}
-      <div className="h-px w-full bg-neutrals-3" />
-      <h2 className="m-0 font-body text-base font-medium leading-6 text-neutrals-8">
-        Your positions
-      </h2>
-      {SIDEBAR_POSITIONS.map((position) => (
-        <div key={position.symbol} className="flex w-full items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <TokenMark symbol={position.symbol} />
-            <span className="font-body text-sm font-medium leading-6 text-neutrals-8">
-              {position.symbol}
-            </span>
-          </div>
-          <div className="flex flex-col items-end gap-0.5 text-right font-body font-medium">
-            <span className="text-[13px] leading-6 text-neutrals-8">{position.amount}</span>
-            <span className="text-[11px] leading-6 text-primary-4">{position.fees}</span>
-          </div>
-        </div>
-      ))}
-    </aside>
-  );
-}
-
-function AddTab({ amount, setAmount }: { amount: string; setAmount: (v: string) => void }) {
-  return (
-    <div className="flex w-full flex-col gap-[25px]">
-      <AssetSelector metaValue="$482,940" metaLabel="Pool TVL" />
-      <AmountBox
-        amount={amount}
-        conversion="≈ $500.00 USDC deposit"
-        helper="Wallet balance: 24,983.21 USDC"
-        onMax={() => setAmount("24983")}
-      />
-      <UtilizationBar />
-      <div className="flex w-full flex-col gap-2 rounded-[10px] bg-neutrals-2 px-8 py-4">
-        <SummaryRow label="Pool TVL" value="$482,940.00" />
-        <SummaryRow label="Your APR (est.)" value="18.4%" />
-        <SummaryRow
-          label="LP tokens received"
-          value="500.00 sLP-SOL"
-          valueClassName="text-primary-4"
-        />
-        <SummaryRow label="Withdrawal" value="Anytime, subject to liquidity" />
-      </div>
-      <UiButton type="button" variant="neutral" size="medium" className="w-full">
-        Add liquidity for 500 USDC
-      </UiButton>
-    </div>
-  );
-}
-
-function RemoveTab({ amount, setAmount }: { amount: string; setAmount: (v: string) => void }) {
-  return (
-    <div className="flex w-full flex-col gap-[25px]">
-      <AssetSelector metaValue="500.00" metaLabel="Your LP tokens" />
-      <AmountBox
-        amount={amount}
-        conversion="≈ $521.30 USDC incl. fees"
-        helper="Available to withdraw: 500.00 sLP-SOL"
-        onMax={() => setAmount("500")}
-      />
-      <UtilizationBar />
-      <div className="flex w-full flex-col gap-2 rounded-[10px] bg-neutrals-2 px-8 py-4">
-        <SummaryRow label="Your deposit" value="$500.00" />
-        <SummaryRow label="Fees earned" value="+$21.30" />
-        <SummaryRow
-          label="You'll receive"
-          value="521.30 USDC"
-          valueClassName="text-primary-4"
-        />
-        <SummaryRow label="Withdrawal" value="Instant · pool has liquidity" />
-      </div>
-      <UiButton type="button" variant="neutral" size="medium" className="w-full">
-        Withdraw 500.00 sLP-SOL
-      </UiButton>
-    </div>
-  );
-}
-
-function MyPositionTab() {
-  return (
-    <div className="flex w-full flex-col gap-[25px]">
-      {MY_POSITIONS.map((position) => (
-        <PositionRow
-          key={position.symbol}
-          symbol={position.symbol}
-          name={position.name}
-          strike={position.deposited}
-          premium={position.fees}
-          status="Earning"
-          meta={position.share}
-        />
-      ))}
-    </div>
-  );
+function clusterFromNetwork(networkId: string | undefined): SolanaCluster {
+  if (!networkId) {
+    return process.env.NEXT_PUBLIC_SOLANA_NETWORK === "mainnet" ? "mainnet" : "devnet";
+  }
+  if (networkId.includes("EtWTRABZaYq6iMfeYKouRu166VU2xqa1") || networkId.includes("devnet")) {
+    return "devnet";
+  }
+  return "mainnet";
 }
 
 export function LiquidityPoolFlow() {
-  const [tab, setTab] = useState<TabId>("add");
-  const [amount, setAmount] = useState("500");
+  return (
+    <Suspense
+      fallback={
+        <AppShell lockViewport>
+          <main className="mx-auto h-full w-full max-w-[1140px] px-4 xl:px-0" />
+        </AppShell>
+      }
+    >
+      <LiquidityPageContent />
+    </Suspense>
+  );
+}
+
+function LiquidityPageContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = useMemo(() => parseTab(searchParams.get("tab")), [searchParams]);
+  const [confirmOpen, setConfirmOpen] = useState(
+    () => searchParams.get("confirm") === "1",
+  );
+  const [quote, setQuote] = useState<LiquidityQuote>({
+    action: "Add liquidity",
+    rows: [],
+    note: "USDC is deposited into the AMM pool. You can withdraw before expiry, subject to available liquidity.",
+  });
+
+  useEffect(() => {
+    setConfirmOpen(searchParams.get("confirm") === "1");
+  }, [searchParams]);
+
+  const setTab = useCallback(
+    (next: LiquidityTab) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (next === "add") {
+        params.delete("tab");
+      } else {
+        params.set("tab", next);
+      }
+      params.delete("confirm");
+      setConfirmOpen(false);
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
+  const openConfirm = useCallback(
+    (next: LiquidityQuote) => {
+      setQuote(next);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("confirm", "1");
+      if (tab !== "add") {
+        params.set("tab", tab);
+      }
+      setConfirmOpen(true);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [pathname, router, searchParams, tab],
+  );
+
+  const closeConfirm = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("confirm");
+    setConfirmOpen(false);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-[29px] px-4 py-20 xl:px-0">
-      <h1 className="m-0 font-display text-[32px] font-bold leading-10 tracking-[-0.32px] text-neutrals-8">
-        Provide liquidity, earn the spread
-      </h1>
-      <p className="m-0 max-w-[1120px] font-body text-caption-2 text-neutrals-5">
-        Underwrite the AMM pool and earn a share of trading fees for taking on UP-side risk. Add or
-        withdraw at any time before expiry.
-      </p>
-      <div className="flex w-full gap-8 overflow-clip">
-        {STATS.map((stat) => (
-          <div
-            key={stat.label}
-            className="flex h-24 min-w-0 flex-1 flex-col gap-1.5 overflow-clip rounded-[10px] border border-neutrals-3 bg-[#141517] px-6 py-5"
-          >
-            <span className="font-display text-[22px] font-bold leading-10 tracking-[-0.22px] text-neutrals-8">
-              {stat.value}
-            </span>
-            <span className="font-body text-caption-2 text-neutrals-5">{stat.label}</span>
-          </div>
-        ))}
-      </div>
-      <div className="flex flex-col gap-8 xl:flex-row xl:items-start">
-        <section className="flex w-full flex-col rounded-[10px] bg-neutrals-1 shadow-depth4 xl:w-[640px]">
-          <div className="flex h-[60px] items-center justify-center border-b border-neutrals-3 px-[46px] py-4">
+    <AppShell lockViewport>
+      <main className="mx-auto flex h-full min-h-0 w-full max-w-[1140px] flex-col gap-4 px-4 py-6 sm:gap-5 sm:py-8 xl:px-0 xl:py-16">
+        <header className="flex w-full shrink-0 flex-col gap-2 sm:gap-3">
+          <h1 className="m-0 max-w-[22ch] text-balance font-display text-[24px] font-bold leading-8 tracking-[-0.24px] text-neutrals-8 sm:text-[32px] sm:leading-10 sm:tracking-[-0.32px]">
+            {PAGE_COPY.title}
+          </h1>
+          <p className="m-0 max-w-[65ch] text-pretty font-body text-caption-2 leading-5 text-neutrals-5">
+            {PAGE_COPY.subtitle}
+          </p>
+        </header>
+
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-4 sm:gap-[34px]">
+          <div className="flex shrink-0 items-center py-2 sm:py-4">
             <div className="flex items-start gap-3">
               {TABS.map((item) => (
                 <SubNavItem
@@ -326,14 +239,598 @@ export function LiquidityPoolFlow() {
               ))}
             </div>
           </div>
-          <div className="flex w-full flex-col items-end px-8 py-8 sm:px-16">
-            {tab === "add" ? <AddTab amount={amount} setAmount={setAmount} /> : null}
-            {tab === "remove" ? <RemoveTab amount={amount} setAmount={setAmount} /> : null}
-            {tab === "position" ? <MyPositionTab /> : null}
-          </div>
-        </section>
-        <LiquiditySidebar />
+
+          {tab === "add" ? <AddPanel onConfirm={openConfirm} /> : null}
+          {tab === "remove" ? <RemovePanel onConfirm={openConfirm} /> : null}
+          {tab === "position" ? (
+            <PositionsPanel onAdd={() => setTab("add")} />
+          ) : null}
+        </div>
+      </main>
+
+      <ConfirmTransactionModal
+        open={confirmOpen && quote.rows.length > 0}
+        action={quote.action}
+        rows={
+          quote.rows.length > 0
+            ? [{ label: "Action", value: quote.action }, ...quote.rows]
+            : undefined
+        }
+        note={quote.note}
+        onCancel={closeConfirm}
+        onConfirm={closeConfirm}
+      />
+    </AppShell>
+  );
+}
+
+function AssetSelect({
+  value,
+  onChange,
+  options,
+  disabled,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  options: { id: string; symbol: string; name: string; iconUrl: string | null }[];
+  disabled?: boolean;
+}) {
+  const selected = options.find((item) => item.id === value) ?? options[0];
+
+  return (
+    <Select value={selected?.id ?? value} onValueChange={onChange} disabled={disabled}>
+      <SelectTrigger
+        aria-label="Select pool"
+        className="group h-auto min-w-0 max-w-[217px] flex-1 gap-[10px] rounded-pill border-0 bg-neutrals-2 px-3 py-2 text-neutrals-8 transition-colors duration-200 hover:bg-neutrals-3 focus-visible:border-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-1 sm:w-[217px] sm:flex-none sm:px-4"
+      >
+        <span className="flex min-w-0 flex-1 items-center gap-2.5">
+          <TokenIcon src={selected?.iconUrl ?? TOKEN_ICONS[selected?.symbol ?? ""] ?? null} symbol={selected?.symbol ?? "?"} />
+          <span className="truncate font-body text-sm font-medium leading-6 text-neutrals-8">
+            {selected?.symbol ?? "SOL"}
+          </span>
+          <span className="hidden truncate font-body text-sm leading-6 text-neutrals-4 sm:inline">
+            {selected?.name ?? "Solana"}
+          </span>
+        </span>
+        <img
+          src="/icons/arrow-down-simple-line.svg"
+          alt=""
+          width={24}
+          height={24}
+          className="size-6 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180"
+        />
+      </SelectTrigger>
+      <SelectContent
+        align="start"
+        className="w-[min(360px,calc(100vw-2rem))] rounded-[10px] border-neutrals-3 bg-neutrals-2"
+      >
+        {options.map((item) => (
+          <SelectItem
+            key={item.id}
+            value={item.id}
+            className="w-full text-neutrals-8 focus:bg-neutrals-3"
+          >
+            <span className="flex min-w-0 items-center gap-2.5">
+              <TokenIcon src={item.iconUrl} symbol={item.symbol} />
+              <span className="truncate font-body text-sm font-medium leading-6">
+                {item.symbol}
+              </span>
+              <span className="truncate font-body text-sm leading-6 text-neutrals-4">
+                {item.name}
+              </span>
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function utilizationBand(value: number) {
+  if (value < 34) return "low";
+  if (value < 67) return "medium";
+  return "high";
+}
+
+function UtilizationBar({ value }: { value: number }) {
+  const [current, setCurrent] = useState(value);
+  const band = utilizationBand(current);
+
+  useEffect(() => {
+    setCurrent(value);
+  }, [value]);
+
+  return (
+    <div className="flex w-full flex-col justify-center gap-2.5 rounded-[10px] border border-neutrals-4 bg-neutrals-1 px-4 py-4 sm:px-6">
+      <div className="flex h-[33px] w-full items-center justify-between font-body font-medium text-neutrals-8">
+        <span className="text-base leading-6">Pool utilization</span>
+        <span className="text-sm leading-6 tabular-nums">{current}%</span>
       </div>
+      <Slider
+        variant="coverage"
+        min={0}
+        max={100}
+        step={1}
+        value={[current]}
+        aria-label="Pool utilization"
+        onValueChange={([next]) => setCurrent(next)}
+      />
+      <div className="flex h-[33px] w-full items-center justify-between font-body text-caption-2">
+        <button
+          type="button"
+          className={cn(
+            "rounded-sm leading-5 transition-colors duration-200 hover:text-neutrals-8",
+            band === "low" ? "font-medium text-neutrals-8" : "text-neutrals-4",
+          )}
+          onClick={() => setCurrent(20)}
+        >
+          Low
+        </button>
+        <button
+          type="button"
+          className={cn(
+            "rounded-sm leading-5 transition-colors duration-200 hover:text-neutrals-8",
+            band === "medium" ? "font-medium text-neutrals-8" : "text-neutrals-4",
+          )}
+          onClick={() => setCurrent(50)}
+        >
+          Medium
+        </button>
+        <button
+          type="button"
+          className={cn(
+            "rounded-sm leading-5 transition-colors duration-200 hover:text-neutrals-8",
+            band === "high" ? "font-medium text-neutrals-8" : "text-neutrals-4",
+          )}
+          onClick={() => setCurrent(85)}
+        >
+          High
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AddPanel({ onConfirm }: { onConfirm: (quote: LiquidityQuote) => void }) {
+  const { address } = useAppKitAccount();
+  const { caipNetworkId } = useAppKitNetwork();
+  const cluster = clusterFromNetwork(
+    typeof caipNetworkId === "string" ? caipNetworkId : undefined,
+  );
+  const [usdcBalance, setUsdcBalance] = useState(0);
+  const [assetsError, setAssetsError] = useState<string | null>(null);
+  const [assetsLoading, setAssetsLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string>(POOLS[0].id);
+  const [amountInput, setAmountInput] = useState("500");
+
+  useEffect(() => {
+    if (!address) return;
+    const owner = parseWalletAddress(address);
+    let cancelled = false;
+    setAssetsLoading(true);
+    setAssetsError(null);
+    fetchWalletAssets(owner, cluster)
+      .then((payload) => {
+        if (cancelled) return;
+        setUsdcBalance(payload.usdcBalance);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setAssetsError(error instanceof Error ? error.message : "Couldn't load wallet assets.");
+      })
+      .finally(() => {
+        if (!cancelled) setAssetsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [address, cluster]);
+
+  const pool = POOLS.find((item) => item.id === selectedId) ?? POOLS[0];
+  const amount = parseAmount(amountInput);
+  const exceedsBalance =
+    !assetsLoading && amount !== null && amount > usdcBalance + 0.0001;
+  const canSubmit =
+    !assetsLoading && amount !== null && amount > 0 && !exceedsBalance;
+  const lpTokens = amount ?? 0;
+
+  function handleAmountChange(value: string) {
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setAmountInput(value);
+    }
+  }
+
+  return (
+    <div className="grid min-h-0 w-full flex-1 grid-cols-1 gap-6 lg:grid-cols-2 lg:items-stretch lg:gap-x-[49px] lg:gap-y-8">
+      <div className="flex flex-col gap-5 lg:gap-[25px]">
+        <div className="flex min-h-12 w-full items-center justify-between gap-3">
+          <AssetSelect
+            value={selectedId}
+            onChange={setSelectedId}
+            options={POOLS.map((item) => ({
+              id: item.id,
+              symbol: item.symbol,
+              name: item.name,
+              iconUrl: item.iconUrl,
+            }))}
+          />
+          <div className="flex flex-col items-end justify-center font-body text-sm font-medium leading-6 tabular-nums">
+            <span className="text-neutrals-8">${formatUsd(pool.tvl, 0)}</span>
+            <span className="text-[#8b5cf6]">{pool.apr.toFixed(1)}% APR</span>
+          </div>
+        </div>
+        {assetsError ? (
+          <p className="m-0 w-full font-body text-caption-2 text-primary-3" role="alert">
+            {assetsError}
+          </p>
+        ) : null}
+
+        <div
+          className={cn(
+            "flex w-full flex-col gap-4 rounded-[10px] border bg-neutrals-1 px-4 py-5 transition-colors duration-200 focus-within:border-primary-1 sm:px-[33px] sm:py-6",
+            exceedsBalance ? "border-primary-3" : "border-neutrals-3",
+          )}
+        >
+          <div className="flex min-h-12 w-full flex-col items-start gap-1 sm:h-12 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <label className="sr-only" htmlFor="lp-deposit-amount">
+              Deposit amount in USDC
+            </label>
+            <input
+              id="lp-deposit-amount"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              value={amountInput}
+              onChange={(event) => handleAmountChange(event.target.value)}
+              className="min-w-0 w-full border-none bg-transparent p-0 font-display text-[32px] font-bold leading-10 tracking-[-0.32px] text-neutrals-8 caret-primary-1 tabular-nums outline-none placeholder:text-neutrals-4 sm:flex-1 sm:text-[40px] sm:leading-[48px] sm:tracking-[-0.4px]"
+              placeholder="0"
+            />
+            <span className="shrink-0 font-body text-sm font-medium leading-6 text-neutrals-5 tabular-nums sm:text-base">
+              ≈ ${formatUsd(amount ?? 0)} USDC
+            </span>
+          </div>
+          <div className="flex w-full items-end justify-between gap-4 sm:items-center">
+            <div className="font-body text-caption-2 tabular-nums">
+              {assetsLoading ? (
+                <span className="mt-0.5 block h-5 w-48 animate-pulse rounded bg-neutrals-3" />
+              ) : (
+                <>
+                  <p className={cn("m-0 leading-5", exceedsBalance ? "text-primary-3" : "text-neutrals-4")}>
+                    Available balance: {formatUsd(usdcBalance)} USDC
+                  </p>
+                  {exceedsBalance ? (
+                    <p className="m-0 leading-5 text-primary-3" role="alert">
+                      Amount exceeds available balance.
+                    </p>
+                  ) : null}
+                </>
+              )}
+            </div>
+            <UiButton
+              type="button"
+              variant="dark"
+              size="small"
+              disabled={assetsLoading}
+              onClick={() => setAmountInput(String(Math.floor(usdcBalance * 100) / 100))}
+            >
+              Max
+            </UiButton>
+          </div>
+        </div>
+
+        <UtilizationBar value={pool.utilization} />
+      </div>
+
+      <aside className="flex h-auto min-h-0 flex-col gap-6 rounded-[10px] bg-neutrals-2 px-5 py-5 shadow-[inset_0_1px_0_rgba(252,252,253,0.06)] sm:px-8 sm:py-4 lg:h-full lg:gap-8">
+        <div className="flex w-full flex-col gap-1">
+          <p className="m-0 font-body text-body-2 text-neutrals-5">You deposit</p>
+          <p className="m-0 font-display text-[32px] font-bold leading-10 tracking-[-0.32px] text-neutrals-8 tabular-nums">
+            ${formatUsd(amount ?? 0)}
+          </p>
+          <p className="m-0 font-body text-body-2 text-neutrals-5">
+            into the {pool.symbol} pool
+          </p>
+        </div>
+        <div className="h-px w-full bg-neutrals-3" />
+        <DetailRows
+          variant="flush"
+          className="min-h-0 flex-1"
+          rows={[
+            { label: "Pool TVL", value: `$${formatUsd(pool.tvl)}` },
+            { label: "Your APR (est.)", value: `${pool.apr.toFixed(1)}%` },
+            {
+              label: "LP tokens received",
+              value: `${formatTokenAmount(lpTokens)} ${pool.lpSymbol}`,
+              valueClassName: "text-primary-4",
+            },
+            { label: "Withdrawal", value: "Anytime, subject to liquidity" },
+          ]}
+        />
+        <UiButton
+          type="button"
+          variant="neutral"
+          size="medium"
+          className="mt-auto h-12 w-full whitespace-normal sm:whitespace-nowrap"
+          disabled={!canSubmit}
+          onClick={() =>
+            onConfirm({
+              action: "Add liquidity",
+              rows: [
+                { label: "Pool", value: `${pool.symbol} · ${pool.name}` },
+                {
+                  label: "Deposit",
+                  value: `${formatUsd(amount ?? 0)} USDC`,
+                  valueClassName: "text-primary-4",
+                },
+                { label: "LP tokens", value: `${formatTokenAmount(lpTokens)} ${pool.lpSymbol}` },
+                { label: "Network fee", value: "~0.00025 SOL" },
+              ],
+              note: "USDC is deposited into the AMM pool. You can withdraw before expiry, subject to available liquidity.",
+            })
+          }
+        >
+          {canSubmit
+            ? `Add liquidity for $${formatUsd(amount ?? 0)}`
+            : exceedsBalance
+              ? "Amount exceeds available balance"
+              : "Enter a deposit amount"}
+        </UiButton>
+      </aside>
+    </div>
+  );
+}
+
+function RemovePanel({ onConfirm }: { onConfirm: (quote: LiquidityQuote) => void }) {
+  const [selectedId, setSelectedId] = useState<string>(MY_POSITIONS[0]?.id ?? "SOL");
+  const [amountInput, setAmountInput] = useState("500");
+
+  const position = MY_POSITIONS.find((item) => item.id === selectedId) ?? MY_POSITIONS[0];
+  const amount = parseAmount(amountInput);
+  const exceedsBalance = amount !== null && position != null && amount > position.lp + 0.0001;
+  const canSubmit = Boolean(position) && amount !== null && amount > 0 && !exceedsBalance;
+  const valuePerLp = position && position.lp > 0
+    ? (position.deposited + position.fees) / position.lp
+    : 0;
+  const receiveUsd = (amount ?? 0) * valuePerLp;
+  const feesShare = position && position.lp > 0
+    ? ((amount ?? 0) / position.lp) * position.fees
+    : 0;
+
+  function applyPosition(nextId: string) {
+    const next = MY_POSITIONS.find((item) => item.id === nextId);
+    if (!next) return;
+    const current = parseAmount(amountInput);
+    if (current === null || current > next.lp) {
+      setAmountInput(String(next.lp));
+    }
+    setSelectedId(nextId);
+  }
+
+  function handleAmountChange(value: string) {
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setAmountInput(value);
+    }
+  }
+
+  if (!position) {
+    return (
+      <div className="flex w-full flex-col items-start gap-2 rounded-[10px] bg-neutrals-2 px-6 py-8">
+        <p className="m-0 font-body text-sm font-medium leading-6 text-neutrals-8">
+          No liquidity to withdraw
+        </p>
+        <p className="m-0 max-w-[42ch] font-body text-caption-2 text-neutrals-4">
+          Add liquidity to a pool first, then you can withdraw it here.
+        </p>
+      </div>
+    );
+  }
+
+  const pool = POOLS.find((item) => item.id === position.id);
+
+  return (
+    <div className="grid min-h-0 w-full flex-1 grid-cols-1 gap-6 lg:grid-cols-2 lg:items-stretch lg:gap-x-[49px] lg:gap-y-8">
+      <div className="flex flex-col gap-5 lg:gap-[25px]">
+        <div className="flex min-h-12 w-full items-center justify-between gap-3">
+          <AssetSelect
+            value={selectedId}
+            onChange={applyPosition}
+            options={MY_POSITIONS.map((item) => ({
+              id: item.id,
+              symbol: item.symbol,
+              name: item.name,
+              iconUrl: item.iconUrl,
+            }))}
+          />
+          <div className="flex flex-col items-end justify-center font-body text-sm font-medium leading-6 tabular-nums">
+            <span className="text-neutrals-8">{formatTokenAmount(position.lp)}</span>
+            <span className="text-neutrals-5">Your LP tokens</span>
+          </div>
+        </div>
+
+        <div
+          className={cn(
+            "flex w-full flex-col gap-4 rounded-[10px] border bg-neutrals-1 px-4 py-5 transition-colors duration-200 focus-within:border-primary-1 sm:px-[33px] sm:py-6",
+            exceedsBalance ? "border-primary-3" : "border-neutrals-3",
+          )}
+        >
+          <div className="flex min-h-12 w-full flex-col items-start gap-1 sm:h-12 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <label className="sr-only" htmlFor="lp-withdraw-amount">
+              Withdraw amount in LP tokens
+            </label>
+            <input
+              id="lp-withdraw-amount"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              value={amountInput}
+              onChange={(event) => handleAmountChange(event.target.value)}
+              className="min-w-0 w-full border-none bg-transparent p-0 font-display text-[32px] font-bold leading-10 tracking-[-0.32px] text-neutrals-8 caret-primary-1 tabular-nums outline-none placeholder:text-neutrals-4 sm:flex-1 sm:text-[40px] sm:leading-[48px] sm:tracking-[-0.4px]"
+              placeholder="0"
+            />
+            <span className="shrink-0 font-body text-sm font-medium leading-6 text-neutrals-5 tabular-nums sm:text-base">
+              ≈ ${formatUsd(receiveUsd)} including fees
+            </span>
+          </div>
+          <div className="flex w-full items-end justify-between gap-4 sm:items-center">
+            <div className="font-body text-caption-2 tabular-nums">
+              <p className={cn("m-0 leading-5", exceedsBalance ? "text-primary-3" : "text-neutrals-4")}>
+                Available to withdraw: {formatTokenAmount(position.lp)} {pool?.lpSymbol ?? "sLP"}
+              </p>
+              {exceedsBalance ? (
+                <p className="m-0 leading-5 text-primary-3" role="alert">
+                  Amount exceeds your LP balance.
+                </p>
+              ) : null}
+            </div>
+            <UiButton
+              type="button"
+              variant="dark"
+              size="small"
+              onClick={() => setAmountInput(String(position.lp))}
+            >
+              Max
+            </UiButton>
+          </div>
+        </div>
+
+        <UtilizationBar value={pool?.utilization ?? 0} />
+      </div>
+
+      <aside className="flex h-auto min-h-0 flex-col gap-6 rounded-[10px] bg-neutrals-2 px-5 py-5 shadow-[inset_0_1px_0_rgba(252,252,253,0.06)] sm:px-8 sm:py-4 lg:h-full lg:gap-8">
+        <div className="flex w-full flex-col gap-1">
+          <p className="m-0 font-body text-body-2 text-neutrals-5">You receive</p>
+          <p className="m-0 font-display text-[32px] font-bold leading-10 tracking-[-0.32px] text-neutrals-8 tabular-nums">
+            ${formatUsd(receiveUsd)}
+          </p>
+          <p className="m-0 font-body text-body-2 text-neutrals-5">
+            including ${formatUsd(feesShare)} in fees
+          </p>
+        </div>
+        <div className="h-px w-full bg-neutrals-3" />
+        <DetailRows
+          variant="flush"
+          className="min-h-0 flex-1"
+          rows={[
+            { label: "Your deposit", value: `$${formatUsd(position.deposited)}` },
+            { label: "Fees earned", value: `+$${formatUsd(position.fees)}` },
+            {
+              label: "You'll receive",
+              value: `${formatUsd(receiveUsd)} USDC`,
+              valueClassName: "text-primary-4",
+            },
+            { label: "Withdrawal", value: "Instant, pool has liquidity" },
+          ]}
+        />
+        <UiButton
+          type="button"
+          variant="neutral"
+          size="medium"
+          className="mt-auto h-12 w-full whitespace-normal sm:whitespace-nowrap"
+          disabled={!canSubmit}
+          onClick={() =>
+            onConfirm({
+              action: "Withdraw liquidity",
+              rows: [
+                { label: "Pool", value: `${position.symbol} · ${position.name}` },
+                { label: "LP tokens", value: `${formatTokenAmount(amount ?? 0)} ${pool?.lpSymbol ?? "sLP"}` },
+                {
+                  label: "You receive",
+                  value: `${formatUsd(receiveUsd)} USDC`,
+                  valueClassName: "text-primary-4",
+                },
+                { label: "Network fee", value: "~0.00025 SOL" },
+              ],
+              note: "LP tokens are burned and USDC returns to your wallet, including your share of earned fees.",
+            })
+          }
+        >
+          {canSubmit
+            ? `Withdraw ${formatTokenAmount(amount ?? 0)} ${pool?.lpSymbol ?? "sLP"}`
+            : exceedsBalance
+              ? "Amount exceeds your LP balance"
+              : "Enter a withdraw amount"}
+        </UiButton>
+      </aside>
+    </div>
+  );
+}
+
+function PositionsPanel({ onAdd }: { onAdd: () => void }) {
+  const [token, setToken] = useState("all");
+  const rows = MY_POSITIONS.filter((row) => token === "all" || row.symbol === token);
+
+  return (
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-4 lg:overflow-hidden">
+      <FilterDropdown
+        label="Token"
+        aria-label="Filter by token"
+        className="max-w-[280px] shrink-0"
+        value={token}
+        onChange={setToken}
+        options={TOKEN_FILTER_OPTIONS}
+      />
+      {rows.length === 0 ? (
+        <div className="flex w-full flex-col items-start gap-2 rounded-[10px] bg-neutrals-2 px-6 py-8">
+          <p className="m-0 font-body text-sm font-medium leading-6 text-neutrals-8">
+            No positions match this filter
+          </p>
+          <p className="m-0 max-w-[42ch] font-body text-caption-2 text-neutrals-4">
+            Choose another token, or open Add to deposit into a pool.
+          </p>
+          <button
+            type="button"
+            className="mt-1 font-display text-sm font-bold leading-4 text-neutrals-8 transition-colors duration-200 hover:text-neutrals-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-1"
+            onClick={onAdd}
+          >
+            Open Add
+          </button>
+        </div>
+      ) : (
+        <div className="min-h-0 w-full flex-1 overflow-x-auto lg:overflow-auto">
+          <table className="w-full min-w-[640px] border-collapse text-left">
+            <thead className="sticky top-0 bg-neutrals-1">
+              <tr className="border-b border-neutrals-3">
+                <th className="px-4 py-3 font-body text-caption-2 font-medium text-neutrals-4">Asset</th>
+                <th className="px-4 py-3 font-body text-caption-2 font-medium text-neutrals-4">Deposited</th>
+                <th className="px-4 py-3 font-body text-caption-2 font-medium text-neutrals-4">Fees</th>
+                <th className="px-4 py-3 font-body text-caption-2 font-medium text-neutrals-4">Share</th>
+                <th className="px-4 py-3 font-body text-caption-2 font-medium text-neutrals-4">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id} className="border-b border-neutrals-3 last:border-b-0">
+                  <td className="px-4 py-3">
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <TokenIcon src={row.iconUrl} symbol={row.symbol} />
+                      <span className="flex min-w-0 flex-col">
+                        <span className="truncate font-body text-sm font-medium leading-6 text-neutrals-8">
+                          {row.symbol}
+                        </span>
+                        <span className="truncate font-body text-caption-2 text-neutrals-4">
+                          {row.name}
+                        </span>
+                      </span>
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-body text-sm leading-6 text-neutrals-8 tabular-nums">
+                    ${formatUsd(row.deposited)}
+                  </td>
+                  <td className="px-4 py-3 font-body text-sm leading-6 text-primary-4 tabular-nums">
+                    +${formatUsd(row.fees)}
+                  </td>
+                  <td className="px-4 py-3 font-body text-sm leading-6 text-neutrals-8 tabular-nums">
+                    {row.share}
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusPill>Earning</StatusPill>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

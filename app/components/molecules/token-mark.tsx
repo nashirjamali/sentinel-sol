@@ -1,57 +1,23 @@
-import { cn } from "@/lib/utils";
+"use client";
 
-export type TokenSymbol = "SOL" | "BTC" | "ETH";
+import { TokenIcon } from "@/components/atoms/token-icon";
+import { TOKEN_ICONS } from "@/lib/wallet/token-icons";
+
+export type TokenSymbol = "SOL" | "cbBTC" | "WBTC";
 
 type TokenMarkProps = {
-  symbol: TokenSymbol;
+  symbol: TokenSymbol | string;
   size?: "sm" | "md";
   className?: string;
 };
 
 export function TokenMark({ symbol, size = "sm", className }: TokenMarkProps) {
-  if (symbol === "SOL") {
-    return (
-      <span
-        className={cn(
-          "relative inline-flex shrink-0 items-center justify-center overflow-clip",
-          size === "sm" ? "h-[22px] w-6" : "size-9 bg-white",
-          className,
-        )}
-      >
-        <img
-          src="/images/app/solana-mark.svg"
-          alt=""
-          width={size === "sm" ? 24 : 26}
-          height={size === "sm" ? 22 : 24}
-          className={size === "sm" ? "size-full" : "h-6 w-[26px]"}
-        />
-      </span>
-    );
-  }
-
-  if (symbol === "BTC") {
-    return (
-      <span
-        className={cn(
-          "inline-flex shrink-0 items-center justify-center rounded-full bg-[#f7931a] font-body font-semibold text-white",
-          size === "sm" ? "size-9 text-lg leading-6" : "size-9 text-lg leading-6",
-          className,
-        )}
-      >
-        ₿
-      </span>
-    );
-  }
-
   return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-[#627eea] font-body font-semibold text-white",
-        size === "sm" ? "size-9 text-lg leading-6" : "size-9 text-lg leading-6",
-        className,
-      )}
-    >
-      Ξ
-    </span>
+    <TokenIcon
+      src={TOKEN_ICONS[symbol] ?? null}
+      symbol={symbol}
+      size={size}
+      className={className}
+    />
   );
 }

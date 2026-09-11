@@ -6,10 +6,11 @@ export const dynamic = "force-dynamic";
 
 export async function POST(
   _request: Request,
-  { params }: { params: { marketId: string } },
+  { params }: { params: Promise<{ marketId: string }> },
 ) {
   try {
-    const result = await resolveMarket(params.marketId);
+    const { marketId } = await params;
+    const result = await resolveMarket(marketId);
     return NextResponse.json(result);
   } catch (error) {
     const { status, body } = toErrorResponse(error);

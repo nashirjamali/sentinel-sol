@@ -4,10 +4,11 @@ import { toErrorResponse } from "@/server/lib/errors";
 
 export async function GET(
   _request: Request,
-  { params }: { params: { marketId: string } },
+  { params }: { params: Promise<{ marketId: string }> },
 ) {
   try {
-    const market = await getMarket(params.marketId);
+    const { marketId } = await params;
+    const market = await getMarket(marketId);
     return NextResponse.json({ market });
   } catch (error) {
     const { status, body } = toErrorResponse(error);

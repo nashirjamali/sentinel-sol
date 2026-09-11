@@ -8,10 +8,11 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _request: Request,
-  { params }: { params: { marketId: string } },
+  { params }: { params: Promise<{ marketId: string }> },
 ) {
   try {
-    const pool = await getPool(params.marketId);
+    const { marketId } = await params;
+    const pool = await getPool(marketId);
     return NextResponse.json({ pool });
   } catch (error) {
     const { status, body } = toErrorResponse(error);

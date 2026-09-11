@@ -6,10 +6,11 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _request: Request,
-  { params }: { params: { wallet: string; marketId: string } },
+  { params }: { params: Promise<{ wallet: string; marketId: string }> },
 ) {
   try {
-    const position = await getPosition(params.wallet, params.marketId);
+    const { wallet, marketId } = await params;
+    const position = await getPosition(wallet, marketId);
     return NextResponse.json({ position });
   } catch (error) {
     const { status, body } = toErrorResponse(error);

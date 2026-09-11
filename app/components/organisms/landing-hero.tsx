@@ -1,5 +1,6 @@
 import { Button } from "@/components/atoms/button";
 import { GradientGlow } from "@/components/atoms/gradient-glow";
+import { HeroAppPreview } from "@/components/organisms/hero-app-preview";
 import { cn } from "@/lib/utils";
 
 type GlowProps = {
@@ -78,7 +79,7 @@ export function LandingHero() {
           </div>
         </div>
         <div className="relative mx-auto h-[320px] w-[calc(100%-32px)] max-w-[1120px] animate-rise-in [animation-delay:380ms] sm:h-[480px] lg:mb-[53px] lg:mt-auto lg:h-[648px] lg:w-full">
-          <div className="absolute inset-0 rounded-[20px] border border-neutrals-3 bg-neutrals-1 shadow-[0px_40px_80px_-24px_rgba(5,5,5,0.5)]" />
+          <HeroAppPreview />
         </div>
       </div>
     </section>

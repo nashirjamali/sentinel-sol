@@ -34,7 +34,7 @@ function ConnectPrompt() {
   const canConnect = Boolean(REOWN_PROJECT_ID);
 
   return (
-    <main className="mx-auto flex w-full max-w-[640px] flex-col items-center gap-6 px-4 text-center">
+    <main className="mx-auto flex w-full max-w-[640px] flex-col items-center gap-6 px-4 py-10 text-center sm:py-0">
       <h1 className="m-0 font-display text-[32px] font-bold leading-10 tracking-[-0.32px] text-neutrals-8">
         Connect your wallet
       </h1>
@@ -76,7 +76,7 @@ export function AppShell({ activeNav, children, lockViewport = false }: AppShell
       <div
         className={cn(
           "flex min-h-0 flex-1 flex-col",
-          lockViewport ? "overflow-hidden" : "overflow-y-auto",
+          lockViewport ? "overflow-y-auto lg:overflow-hidden" : "overflow-y-auto",
         )}
       >
         <div

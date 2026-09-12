@@ -30,12 +30,25 @@ const MAINNET_WRAPPED_BTC: WrappedBtcEntry[] = [
   { mint: "5XZw2LKTyrfvfiskJ78AMpackRjPcyCif1WhUsPDuVqQ", symbol: "WBTC", name: "Wrapped BTC", icon: WRAPPED_BTC_ICON.WBTC },
 ];
 
+/**
+ * A flat placeholder badge — deliberately NOT the real Coinbase/Wormhole logos below, so a
+ * devnet test mint never borrows a real brand's icon. `letter` is the token's own initial;
+ * `hex` gives each test token a distinct color so they stay visually distinguishable from
+ * each other, not just from the real thing.
+ */
+function testTokenIcon(letter: string, hex: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="${hex}" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="3 2"/><text x="16" y="21" font-family="monospace" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">${letter}</text></svg>`;
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+}
+
 // Devnet has no real wBTC/cbBTC — these are throwaway test mints created by
 // scripts/create-devnet-test-tokens.ts (config/devnet-test-mints.json), so devnet wallets
 // have something real to hold and this page can display a non-zero balance while testing.
+// Icons are generic dashed badges, not the real Coinbase/Wormhole logos — reusing those for a
+// fake token would misrepresent it as the genuine, brand-affiliated asset.
 const DEVNET_WRAPPED_BTC: WrappedBtcEntry[] = [
-  { mint: devnetTestMints.cbbtc, symbol: "cbBTC", name: "Coinbase Wrapped BTC (devnet test token)", icon: WRAPPED_BTC_ICON.cbBTC },
-  { mint: devnetTestMints.wbtc, symbol: "WBTC", name: "Wrapped BTC (devnet test token)", icon: WRAPPED_BTC_ICON.WBTC },
+  { mint: devnetTestMints.cbbtc, symbol: "cbBTC", name: "Coinbase Wrapped BTC (devnet test token)", icon: testTokenIcon("C", "#7c3aed") },
+  { mint: devnetTestMints.wbtc, symbol: "WBTC", name: "Wrapped BTC (devnet test token)", icon: testTokenIcon("W", "#0891b2") },
 ];
 
 const MAINNET_USDC_MINTS = new Set([

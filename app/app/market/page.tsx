@@ -29,6 +29,7 @@ import { fetchPool, type Pool } from "@/lib/api/pool";
 import { fetchPositions, type Position } from "@/lib/api/positions";
 import { buildProtectTx, buildRedeemTx } from "@/lib/api/tx";
 import { useSendUnsignedTx } from "@/lib/wallet/send-transaction";
+import { lmsrSwapAmountOut, applyLmsrFee } from "@/lib/lmsr";
 import { cn } from "@/lib/utils";
 import { APP_ASSETS, TOKEN_FILTER_OPTIONS } from "@/lib/wallet/token-icons";
 
@@ -128,8 +129,12 @@ function daysUntil(expiryTs: number): number {
   return Math.max(0, Math.round((expiryTs - now) / 86400));
 }
 
+// strike_price is stored at Pyth's own expo precision (1e8 per whole unit, per
+// docs/libs/API.md), not USDC's 6 decimals — using the USDC default here was a 100x bug.
+const PYTH_PRICE_DECIMALS = 8;
+
 function formatStrike(strikePrice: string): string {
-  return `$${formatUsd(fromBaseUnits(strikePrice))}`;
+  return `$${formatUsd(fromBaseUnits(strikePrice, PYTH_PRICE_DECIMALS))}`;
 }
 
 export default function MarketPage() {
@@ -403,7 +408,6 @@ function ProtectPanel({
   const maxAmount = maxAmountFor(price, usdcBalance);
   const coverageUsd = amount === null ? 0 : amount * price;
   const exceedsBalance = amount !== null && coverageUsd > usdcBalance + 0.0001;
-  const priceDown = pool?.priceDown ?? 0;
   const canBuy =
     Boolean(asset?.supported) &&
     Boolean(selectedMarket) &&
@@ -413,7 +417,19 @@ function ProtectPanel({
     price > 0 &&
     !exceedsBalance;
   const premium = coverageUsd;
-  const downOut = priceDown > 0 ? coverageUsd / priceDown : 0;
+  // Total DOWN held after mint+swap (for display) = the mint leg (coverageUsd, 1:1) plus the
+  // swap leg's real output. The swap leg must use the AMM's actual LMSR price-impact curve
+  // (lmsrSwapAmountOut), not a linear priceDown/priceUp ratio — that ratio only holds for an
+  // infinitesimally small trade; anything sized relative to the pool's `b` gets materially
+  // less out, and overestimating it here means minDownOut trips AMM's SlippageExceeded on
+  // every real buy (found by testing against a live devnet pool, not a theoretical concern).
+  const amountBaseUnits = toBaseUnits(coverageUsd);
+  const swapGrossOut = pool
+    ? lmsrSwapAmountOut(Number(pool.qDown), Number(pool.qUp), Number(pool.b), "up", Number(amountBaseUnits))
+    : 0;
+  const swapNetOutBaseUnits = pool ? applyLmsrFee(swapGrossOut, pool.feeBps) : 0;
+  const swapDownOut = swapNetOutBaseUnits / 10 ** USDC_DECIMALS;
+  const downOut = coverageUsd + swapDownOut;
   const expiryDays = selectedMarket ? daysUntil(selectedMarket.expiryTs) : 0;
   const expiryLabel = expiryDays <= 1 ? "1 day" : `${expiryDays} days`;
 
@@ -664,10 +680,9 @@ function ProtectPanel({
           disabled={!canBuy || poolLoading}
           onClick={() => {
             if (!selectedMarket || !pool) return;
-            const amountBaseUnits = toBaseUnits(coverageUsd);
-            const minDownOutBaseUnits = toBaseUnits(
-              (downOut * (10_000 - PROTECT_SLIPPAGE_BPS)) / 10_000,
-            );
+            const minDownOutBaseUnits = Math.floor(
+              (swapNetOutBaseUnits * (10_000 - PROTECT_SLIPPAGE_BPS)) / 10_000,
+            ).toString();
             onBuy({
               coverage: coverageLabel,
               youPay: `${formatUsd(premium)} USDC`,

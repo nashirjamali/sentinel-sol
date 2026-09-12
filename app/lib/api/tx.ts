@@ -57,8 +57,7 @@ export function buildRedeemTx(params: {
 
 export function buildAddLiquidityTx(params: {
   market: string;
-  downAmount: string;
-  upAmount: string;
+  usdcAmount: string;
   wallet: string;
 }): Promise<string> {
   return postTx("add-liquidity", params);

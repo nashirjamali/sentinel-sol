@@ -622,7 +622,6 @@ function AddPanel({
           disabled={!canSubmit}
           onClick={() => {
             if (!entry || !address || amount === null) return;
-            const half = toBaseUnits(amount / 2);
             onConfirm({
               action: "Add liquidity",
               rows: [
@@ -640,8 +639,7 @@ function AddPanel({
                 const owner = parseWalletAddress(address);
                 const base64 = await buildAddLiquidityTx({
                   market: entry.market.address,
-                  downAmount: half,
-                  upAmount: half,
+                  usdcAmount: toBaseUnits(amount),
                   wallet: owner,
                 });
                 await sendTx(base64);
